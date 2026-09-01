@@ -1,352 +1,751 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Field Safety Monitoring Station</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Field Safety Monitoring Station | CoalGov AI</title>
+    <!-- Tailwind CSS with custom configuration matching CoalGov AI Carbon -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="/static/css/style.css"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "background": "#131314",
+                        "surface": "#131314",
+                        "carbon-black": "#0A0A0B",
+                        "steel-gray": "#2D2E32",
+                        "surface-container-lowest": "#0e0e0f",
+                        "surface-container-low": "#1c1b1c",
+                        "surface-container": "#201f20",
+                        "surface-container-high": "#2a2a2b",
+                        "surface-container-highest": "#353436",
+                        "surface-bright": "#3a393a",
+                        "surface-variant": "#353436",
+                        "surface-dim": "#131314",
+                        "outline": "#9c8f79",
+                        "outline-variant": "#4f4633",
+                        "on-background": "#e5e2e3",
+                        "on-surface": "#e5e2e3",
+                        "on-surface-variant": "#d3c5ac",
+                        "primary": "#ffe1a7",
+                        "primary-container": "#fbbf24",
+                        "primary-fixed": "#ffdf9f",
+                        "primary-fixed-dim": "#f9bd22",
+                        "hazard-yellow": "#FBBF24",
+                        "safety-orange": "#F97316",
+                        "industrial-green": "#22C55E",
+                        "critical-red": "#FF0000",
+                        "error": "#ffb4ab",
+                        "error-container": "#93000a",
+                        "secondary": "#ffb690",
+                        "secondary-container": "#ec6a06",
+                        "tertiary": "#e5e4e9"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "sm": "0.125rem",
+                        "md": "0.25rem",
+                        "lg": "0.375rem",
+                        "xl": "0.5rem"
+                    },
+                    fontFamily: {
+                        "sans": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-cyan-500 selection:text-black">
+<body data-initial-view="{{ initial_view|default('overview') }}" class="bg-carbon-black text-on-surface antialiased flex h-screen overflow-hidden coal-dust-bg selection:bg-hazard-yellow selection:text-carbon-black font-sans">
+    <div class="coal-dust-overlay"></div>
 
-    <!-- Top Navigation / Status Header -->
-    <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-50 px-4 py-3 shadow-lg">
-        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-            
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                    <i class="fa-solid fa-shield-halved text-slate-950 text-xl"></i>
+    <!-- Desktop Navigation Sidebar -->
+    <nav class="hidden md:flex flex-col h-full w-72 bg-surface-container/95 backdrop-blur border-r-2 border-steel-gray py-6 flex-shrink-0 z-40 relative">
+        <!-- Brand / Header -->
+        <div class="px-6 mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-sm bg-gradient-to-br from-hazard-yellow to-safety-orange flex items-center justify-center shadow-lg shadow-hazard-yellow/20">
+                    <span class="material-symbols-outlined text-carbon-black text-2xl font-bold">shield_with_heart</span>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold tracking-wide text-slate-100 flex items-center gap-2">
-                        FIELD SAFETY SYSTEM
-                        <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/30 text-emerald-400 font-mono font-normal">
-                            <i class="fa-solid fa-circle text-[8px] animate-pulse mr-1"></i>STATION ONLINE
+                    <h2 class="font-bold text-lg tracking-wider text-hazard-yellow font-sans leading-none">COALGOV AI</h2>
+                    <p class="font-mono text-[10px] text-on-surface-variant tracking-widest mt-1 uppercase">Field Safety Unit</p>
+                </div>
+            </div>
+
+            <!-- Station Node Card -->
+            <div class="mt-5 p-2.5 industrial-panel rounded-sm flex items-center gap-3">
+                <div class="w-9 h-9 rounded-sm border border-steel-gray bg-carbon-black flex items-center justify-center text-hazard-yellow font-bold font-mono text-sm">
+                    FS
+                </div>
+                <div class="overflow-hidden flex-1">
+                    <div class="font-mono text-xs text-on-surface font-bold truncate">STATION-01</div>
+                    <div class="font-mono text-[10px] text-on-surface-variant truncate">Live Telemetry Node</div>
+                </div>
+                <div class="flex items-center gap-1 bg-surface-container-highest px-1.5 py-0.5 rounded border border-steel-gray">
+                    <span class="w-1.5 h-1.5 rounded-full bg-industrial-green animate-pulse"></span>
+                    <span class="font-mono text-[9px] text-industrial-green font-bold">ONLINE</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Links (Contextual Pages) -->
+        <div class="flex-1 overflow-y-auto px-4 space-y-1.5 font-mono text-xs">
+            <a href="/dashboard" onclick="handleNavClick(event, 'overview', '/dashboard')" id="nav-overview" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 bg-surface-container-high border-l-4 border-hazard-yellow text-hazard-yellow rounded-r-sm font-bold transition-all text-left group">
+                <span class="material-symbols-outlined text-lg">dashboard</span>
+                <span class="tracking-wide">Command Center</span>
+            </a>
+            <a href="/incidents" onclick="handleNavClick(event, 'incidents', '/incidents')" id="nav-incidents" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">warning</span>
+                <span class="tracking-wide flex-1">Incident Stream</span>
+                <span id="nav-alert-badge" class="bg-surface-container text-on-surface-variant border border-steel-gray px-1.5 py-0.2 rounded text-[10px]">0</span>
+            </a>
+            <a href="/workers" onclick="handleNavClick(event, 'workers', '/workers')" id="nav-workers" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">engineering</span>
+                <span class="tracking-wide">Worker Vitals</span>
+            </a>
+            <a href="/checkpoints" onclick="handleNavClick(event, 'checkpoints', '/checkpoints')" id="nav-checkpoints" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">verified_user</span>
+                <span class="tracking-wide">Checkpoint Suite</span>
+            </a>
+            <a href="/telemetry" onclick="handleNavClick(event, 'charts', '/telemetry')" id="nav-charts" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">monitoring</span>
+                <span class="tracking-wide">Trend Telemetry</span>
+            </a>
+            <a href="/rover" onclick="handleNavClick(event, 'rover', '/rover')" id="nav-rover" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">settings_remote</span>
+                <span class="tracking-wide">Recon Rover</span>
+            </a>
+            <a href="/network" onclick="handleNavClick(event, 'topology', '/network')" id="nav-topology" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">hub</span>
+                <span class="tracking-wide">Mesh Network</span>
+            </a>
+
+            <!-- Divider -->
+            <div class="border-t border-steel-gray my-2"></div>
+
+            <a href="/reports" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">description</span>
+                <span class="tracking-wide">AI Safety Report</span>
+            </a>
+        </div>
+
+        <!-- Sidebar Footer Actions -->
+        <div class="px-4 mt-auto pt-4 border-t-2 border-steel-gray space-y-2">
+            <a href="/" class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-surface-container-low hover:bg-surface-container-high border border-steel-gray text-on-surface font-mono text-xs rounded-sm transition-colors group">
+                <span class="material-symbols-outlined text-sm text-hazard-yellow">arrow_back</span>
+                <span>PROJECT OVERVIEW</span>
+            </a>
+            <button onclick="openThresholdModal()" class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-surface-container-low hover:bg-surface-container-high border border-steel-gray text-on-surface font-mono text-xs rounded-sm transition-colors">
+                <span class="material-symbols-outlined text-sm text-hazard-yellow">tune</span>
+                <span>SAFETY THRESHOLDS</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col min-w-0 bg-transparent relative z-10 overflow-hidden">
+        <!-- Top App Bar Header -->
+        <header class="flex justify-between items-center w-full px-4 md:px-8 h-16 bg-surface-container/90 backdrop-blur border-b-2 border-steel-gray flex-shrink-0 z-30 font-mono">
+            <div class="flex items-center gap-3">
+                <button class="md:hidden text-on-surface-variant hover:bg-surface-container-high p-1.5 rounded" onclick="document.querySelector('nav').classList.toggle('hidden')">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-2">
+                        <span id="current-view-badge" class="text-xs font-bold text-hazard-yellow uppercase tracking-wider">COMMAND CENTER</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-sm bg-industrial-green/10 border border-industrial-green/30 text-industrial-green">
+                            STATION ONLINE
                         </span>
-                    </h1>
-                    <p class="text-xs text-slate-400">Hazardous Site Safety, Environmental Monitoring & Rover Control</p>
+                    </div>
+                    <span class="text-[10px] text-on-surface-variant hidden sm:inline">Subterranean Coal Mine Safety & Multi-Sensor Telemetry</span>
                 </div>
             </div>
 
             <!-- Quick Metrics Header Badges -->
-            <div class="flex items-center space-x-3 text-xs">
-                <div class="bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                    <i class="fa-solid fa-tower-broadcast text-cyan-400"></i>
-                    <span>Checkpoints: <strong id="header-cp-count" class="text-cyan-300 font-mono">0</strong></span>
+            <div class="flex items-center space-x-2 md:space-x-3 text-xs">
+                <!-- Clock -->
+                <div class="bg-carbon-black border border-steel-gray px-3 py-1 rounded-sm flex items-center gap-1.5 text-on-surface">
+                    <span class="material-symbols-outlined text-on-surface-variant text-sm">schedule</span>
+                    <span id="server-clock" class="font-bold">--:--:--</span>
                 </div>
-                <div class="bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                    <i class="fa-solid fa-user-shield text-emerald-400"></i>
-                    <span>Personnel: <strong id="header-band-count" class="text-emerald-300 font-mono">0</strong></span>
-                </div>
-                <div class="bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                    <i class="fa-solid fa-robot text-amber-400"></i>
-                    <span>Rover: <strong id="header-rover-status" class="text-amber-300 font-mono">STOPPED</strong></span>
-                </div>
-                <div class="bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                    <i class="fa-regular fa-clock text-slate-400"></i>
-                    <span id="server-clock" class="font-mono text-slate-300">--:--:--</span>
-                </div>
-                <button id="btn-audio-toggle" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1.5 rounded-lg text-slate-300 transition" title="Toggle Alert Sound">
-                    <i class="fa-solid fa-volume-high text-cyan-400"></i>
+
+                <!-- Alert Sound Toggle -->
+                <button id="btn-audio-toggle" class="bg-surface-container-low hover:bg-surface-container-high border border-steel-gray px-2.5 py-1 rounded-sm text-hazard-yellow transition-colors" title="Toggle Alert Audio Chime">
+                    <span class="material-symbols-outlined text-sm align-middle">volume_up</span>
                 </button>
-                <button onclick="openThresholdModal()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1.5 rounded-lg text-slate-300 transition" title="Safety Thresholds">
-                    <i class="fa-solid fa-sliders text-slate-300"></i>
+
+                <!-- Threshold Modal Trigger -->
+                <button onclick="openThresholdModal()" class="bg-surface-container-low hover:bg-surface-container-high border border-steel-gray px-2.5 py-1 rounded-sm text-on-surface-variant hover:text-on-surface transition-colors" title="Safety Alert Thresholds">
+                    <span class="material-symbols-outlined text-sm align-middle">sliders</span>
                 </button>
             </div>
+        </header>
 
-        </div>
-    </header>
+        <!-- Scrollable Body (Contextual Operational Views) -->
+        <main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 scrollbar-thin font-mono">
 
-    <!-- Main Content Container -->
-    <main class="max-w-7xl mx-auto p-4 space-y-6">
+            <!-- ================= PAGE 1: COMMAND CENTER (OVERVIEW) ================= -->
+            <div id="view-overview" class="operational-view space-y-6">
+                <!-- Real KPI Strip -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- KPI 1 -->
+                    <div onclick="handleNavClick(event, 'checkpoints', '/checkpoints')" class="cursor-pointer bg-surface-container-low border-2 border-steel-gray hover:border-hazard-yellow rounded-sm p-4 flex flex-col justify-between h-24 relative overflow-hidden group transition-colors">
+                        <span class="text-xs text-on-surface-variant uppercase tracking-wider flex items-center justify-between">
+                            <span>Checkpoints</span>
+                            <span class="material-symbols-outlined text-hazard-yellow text-sm">cell_tower</span>
+                        </span>
+                        <div class="flex items-baseline justify-between z-10">
+                            <span class="text-2xl md:text-3xl font-bold text-hazard-yellow" id="header-cp-count">0</span>
+                            <span class="text-[10px] text-on-surface-variant">MQ5 • MQ7 • MQ135</span>
+                        </div>
+                    </div>
 
-        <!-- Critical Alerts Banner -->
-        <section id="alerts-container" class="space-y-2">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
-                    <span>Active Incident & Alert Stream</span>
-                    <span id="alert-badge-count" class="bg-rose-950 text-rose-300 text-[10px] px-1.5 py-0.2 rounded-full border border-rose-500/40">0 Active</span>
+                    <!-- KPI 2 -->
+                    <div onclick="handleNavClick(event, 'workers', '/workers')" class="cursor-pointer bg-surface-container-low border-2 border-steel-gray hover:border-industrial-green rounded-sm p-4 flex flex-col justify-between h-24 relative overflow-hidden group transition-colors">
+                        <span class="text-xs text-on-surface-variant uppercase tracking-wider flex items-center justify-between">
+                            <span>Personnel Bands</span>
+                            <span class="material-symbols-outlined text-industrial-green text-sm">health_and_safety</span>
+                        </span>
+                        <div class="flex items-baseline justify-between z-10">
+                            <span class="text-2xl md:text-3xl font-bold text-industrial-green" id="header-band-count">0</span>
+                            <span class="text-[10px] text-on-surface-variant">MAX30100</span>
+                        </div>
+                    </div>
+
+                    <!-- KPI 3 -->
+                    <div onclick="handleNavClick(event, 'incidents', '/incidents')" class="cursor-pointer bg-surface-container-low border-2 border-steel-gray hover:border-critical-red border-l-4 border-l-critical-red rounded-sm p-4 flex flex-col justify-between h-24 relative overflow-hidden group transition-colors">
+                        <span class="text-xs text-on-surface-variant uppercase tracking-wider flex items-center justify-between">
+                            <span>Active Incidents</span>
+                            <span class="material-symbols-outlined text-critical-red text-sm">emergency</span>
+                        </span>
+                        <div class="flex items-baseline justify-between z-10">
+                            <span class="text-2xl md:text-3xl font-bold text-critical-red" id="alert-badge-count">0 Active</span>
+                            <span class="text-[10px] text-critical-red font-bold">STREAM</span>
+                        </div>
+                    </div>
+
+                    <!-- KPI 4 -->
+                    <div onclick="handleNavClick(event, 'rover', '/rover')" class="cursor-pointer bg-surface-container-low border-2 border-steel-gray hover:border-safety-orange rounded-sm p-4 flex flex-col justify-between h-24 relative overflow-hidden group transition-colors">
+                        <span class="text-xs text-on-surface-variant uppercase tracking-wider flex items-center justify-between">
+                            <span>Rover Link</span>
+                            <span class="material-symbols-outlined text-safety-orange text-sm">smart_toy</span>
+                        </span>
+                        <div class="flex items-baseline justify-between z-10">
+                            <span class="text-sm md:text-base font-bold text-safety-orange uppercase truncate" id="header-rover-status">STOPPED</span>
+                            <span class="text-[10px] text-on-surface-variant">ESP32-ROVER</span>
+                        </div>
+                    </div>
                 </div>
-                <button onclick="clearAlerts()" class="text-xs text-slate-400 hover:text-slate-200 transition flex items-center gap-1">
-                    <i class="fa-solid fa-check-double"></i> Acknowledge All
-                </button>
+
+                <!-- Command Center Dual-Column Overview Deck -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left 2 Cols: Quick Telemetry Previews -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Biometrics Stream Card -->
+                        <div class="industrial-panel border-2 border-steel-gray rounded-sm p-4 space-y-3">
+                            <div class="flex justify-between items-center border-b border-steel-gray pb-2.5">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-1.5 h-4 bg-industrial-green"></div>
+                                    <h3 class="font-bold text-xs uppercase tracking-wider text-on-surface">Personnel Biometric Telemetry Snapshot</h3>
+                                </div>
+                                <button onclick="handleNavClick(event, 'workers', '/workers')" class="text-[11px] text-hazard-yellow hover:underline flex items-center gap-1">
+                                    <span>OPEN WORKER SUITE</span>
+                                    <span class="material-symbols-outlined text-xs">arrow_forward</span>
+                                </button>
+                            </div>
+                            <div id="overview-workers-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Checkpoint Sensors Grid -->
+                        <div class="industrial-panel border-2 border-steel-gray rounded-sm p-4 space-y-3">
+                            <div class="flex justify-between items-center border-b border-steel-gray pb-2.5">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-1.5 h-4 bg-hazard-yellow"></div>
+                                    <h3 class="font-bold text-xs uppercase tracking-wider text-on-surface">Checkpoint Environmental Suites Snapshot</h3>
+                                </div>
+                                <button onclick="handleNavClick(event, 'checkpoints', '/checkpoints')" class="text-[11px] text-hazard-yellow hover:underline flex items-center gap-1">
+                                    <span>OPEN CHECKPOINT SUITE</span>
+                                    <span class="material-symbols-outlined text-xs">arrow_forward</span>
+                                </button>
+                            </div>
+                            <div id="overview-checkpoints-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Col: Incident Feed & Rover Preview -->
+                    <div class="space-y-6">
+                        <!-- Incidents Stream Panel -->
+                        <div class="industrial-panel border-2 border-steel-gray rounded-sm flex flex-col">
+                            <div class="industrial-panel-header px-4 py-2.5 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-critical-red text-base">notifications_active</span>
+                                    <h3 class="text-xs font-bold text-on-surface uppercase tracking-wider">Active Incident Feed</h3>
+                                </div>
+                                <button onclick="clearAlerts()" class="text-[10px] text-on-surface-variant hover:text-hazard-yellow">ACK ALL</button>
+                            </div>
+                            <div id="overview-alerts-feed" class="p-3 max-h-56 overflow-y-auto space-y-2 scrollbar-thin bg-surface-container-lowest">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Rover Optical Status Card -->
+                        <div class="industrial-panel border-2 border-steel-gray rounded-sm p-4 space-y-3">
+                            <div class="flex justify-between items-center border-b border-steel-gray pb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-hazard-yellow text-base">videocam</span>
+                                    <h3 class="text-xs font-bold text-on-surface uppercase tracking-wider">Rover Optical Feed</h3>
+                                </div>
+                                <button onclick="handleNavClick(event, 'rover', '/rover')" class="text-[11px] text-hazard-yellow hover:underline">CONSOLE</button>
+                            </div>
+                            <div class="relative rounded-sm overflow-hidden border border-steel-gray bg-carbon-black aspect-[4/3] flex items-center justify-center">
+                                <img id="overview-rover-camera-img" src="/api/camera/latest.jpg" alt="Rover Optical Preview" class="w-full h-full object-cover"/>
+                                <div class="absolute bottom-2 left-2 bg-carbon-black/85 backdrop-blur px-2 py-0.5 rounded-sm text-[9px] text-on-surface border border-steel-gray">
+                                    CAM-01 [OV2640]
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div id="alerts-feed" class="max-h-36 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
-                <div class="bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-400 flex items-center justify-between">
-                    <span class="flex items-center gap-2">
-                        <i class="fa-solid fa-circle-info text-cyan-400"></i>
-                        <span>System nominal. Monitoring vitals, gas sensors, acoustics, and PIR motion...</span>
-                    </span>
-                    <span class="font-mono text-[10px] text-slate-500">Live</span>
-                </div>
-            </div>
-        </section>
 
-        <!-- Section 1: Personnel Vitals Tracking (ESP32 #1 Band) -->
-        <section class="space-y-3">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <div class="w-2 h-5 bg-emerald-500 rounded-sm"></div>
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Worker Biometric Telemetry (Band ESP32 #1)</h2>
-                </div>
-                <span class="text-xs text-slate-400">MAX30100 Pulse Oximetry & Blood Oxygen</span>
-            </div>
-            
-            <div id="workers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5 text-center text-slate-500 text-xs">
-                    <i class="fa-solid fa-spinner fa-spin mr-2"></i> Connecting to monitoring bands...
-                </div>
-            </div>
-        </section>
 
-        <!-- Section 2: Checkpoint Environmental Monitoring Grid (ESP32 #4) -->
-        <section class="space-y-3">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <div class="w-2 h-5 bg-cyan-500 rounded-sm"></div>
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Checkpoint Sensor Suite (ESP32 #4)</h2>
+            <!-- ================= PAGE 2: INCIDENT STREAM ================= -->
+            <div id="view-incidents" class="operational-view space-y-6 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-steel-gray pb-4">
+                    <div>
+                        <h2 class="text-base font-bold uppercase tracking-wider text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-critical-red text-xl">notifications_active</span>
+                            Incident & Safety Alert Stream Console
+                        </h2>
+                        <p class="text-xs text-on-surface-variant mt-0.5">Real-time hazard threshold breach events from sensor suites and worker bands.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="clearAlerts()" class="text-xs bg-surface-container hover:bg-surface-container-high border border-steel-gray px-3 py-1.5 rounded-sm text-hazard-yellow flex items-center gap-1 transition-colors">
+                            <span class="material-symbols-outlined text-sm">done_all</span>
+                            <span>ACKNOWLEDGE ALL INCIDENTS</span>
+                        </button>
+                    </div>
                 </div>
-                <span class="text-xs text-slate-400">Soldered: MQ5(33), MQ7(34), MQ135(35), HW-416-B PIR(26), HW-484(27), DHT11(15)</span>
+
+                <!-- Main Full-Width Incident Feed Container -->
+                <div class="industrial-panel border-2 border-steel-gray rounded-sm flex flex-col">
+                    <div class="industrial-panel-header px-4 py-3 flex items-center justify-between">
+                        <span class="text-xs font-bold text-on-surface uppercase tracking-wider">Live Chronological Incident Log</span>
+                        <span class="text-[10px] text-on-surface-variant">Real-time buffer (Latest 30 Events)</span>
+                    </div>
+                    <div id="alerts-feed" class="p-4 min-h-[350px] max-h-[600px] overflow-y-auto space-y-2.5 scrollbar-thin bg-surface-container-lowest">
+                        <!-- Populated by app.js -->
+                    </div>
+                </div>
+
+                <!-- Safety Protocol Guidance -->
+                <div class="industrial-panel border border-steel-gray p-4 rounded-sm space-y-2 text-xs">
+                    <div class="text-hazard-yellow font-bold uppercase flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">emergency_home</span>
+                        <span>Mine Emergency Escalation Protocol</span>
+                    </div>
+                    <p class="text-on-surface-variant text-[11px] leading-relaxed">
+                        • <strong>CRITICAL HYPOXIA / HIGH GAS:</strong> Immediate shaft evacuation order and ventilation acceleration.<br/>
+                        • <strong>ACOUSTIC SOUND SPIKE:</strong> Deploy Recon Rover immediately to inspect structural stability before sending human rescuers.
+                    </p>
+                </div>
             </div>
 
-            <div id="checkpoints-grid" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5 text-center text-slate-500 text-xs col-span-full">
-                    <i class="fa-solid fa-spinner fa-spin mr-2"></i> Listening for checkpoint sensor telemetry...
+
+            <!-- ================= PAGE 3: WORKER VITALS ================= -->
+            <div id="view-workers" class="operational-view space-y-6 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-steel-gray pb-4">
+                    <div>
+                        <h2 class="text-base font-bold uppercase tracking-wider text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-industrial-green text-xl">monitor_heart</span>
+                            Personnel Biometric Telemetry Suite
+                        </h2>
+                        <p class="text-xs text-on-surface-variant mt-0.5">Continuous pulse oximetry, blood oxygen saturation (SpO2), and mesh relay hops.</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="bg-carbon-black border border-steel-gray px-3 py-1 rounded-sm text-industrial-green">
+                            MAX30100 ESP-NOW INGESTION ACTIVE
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Workers Grid -->
+                <div id="workers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- Populated dynamically by app.js -->
+                </div>
+
+                <!-- Dedicated Personnel Vitals Trend Chart -->
+                <div class="industrial-panel border-2 border-steel-gray rounded-sm p-4 space-y-3">
+                    <div class="flex justify-between items-center border-b border-steel-gray pb-2">
+                        <h3 class="text-xs font-bold text-on-surface uppercase tracking-wider flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-critical-red text-sm">ecg_heart</span>
+                            Live Personnel Vitals (SpO2 % & Heart Rate BPM)
+                        </h3>
+                        <span class="text-[10px] text-on-surface-variant">MAX30100 Rolling Telemetry</span>
+                    </div>
+                    <img id="chart-vitals-dedicated" src="/api/charts/vitals.png" alt="Vitals Chart" class="w-full max-h-[300px] object-contain rounded-sm border border-steel-gray bg-carbon-black"/>
+                </div>
+
+                <!-- Vitals Reference Ranges -->
+                <div class="industrial-panel border border-steel-gray p-4 rounded-sm space-y-2 text-xs">
+                    <div class="text-hazard-yellow font-bold uppercase flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">info</span>
+                        <span>Biometric Safety Threshold Standards</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px] text-on-surface-variant pt-1">
+                        <div class="bg-carbon-black p-2.5 rounded-sm border border-steel-gray">
+                            <strong class="text-industrial-green block">NOMINAL SpO2: 95% – 100%</strong>
+                            <span>Normal oxygenated blood levels in mine atmosphere.</span>
+                        </div>
+                        <div class="bg-carbon-black p-2.5 rounded-sm border border-steel-gray">
+                            <strong class="text-hazard-yellow block">WARNING SpO2: 90% – 94%</strong>
+                            <span>Elevated respiration risk; check ambient air quality.</span>
+                        </div>
+                        <div class="bg-carbon-black p-2.5 rounded-sm border border-steel-gray">
+                            <strong class="text-critical-red block">CRITICAL HYPOXIA: &lt; 90%</strong>
+                            <span>Immediate evacuation & oxygen intervention required.</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </section>
 
-        <!-- Section 3: Live Matplotlib Charts (PRD FR5.6) -->
-        <section class="space-y-3">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <div class="w-2 h-5 bg-amber-500 rounded-sm"></div>
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Real-Time Hazard & Vitals Trend Charts</h2>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs text-slate-400">Matplotlib Live Render Engine</span>
-                    <button onclick="refreshCharts()" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 transition">
-                        <i class="fa-solid fa-rotate mr-1"></i> Refresh
+
+            <!-- ================= PAGE 4: CHECKPOINT SUITE ================= -->
+            <div id="view-checkpoints" class="operational-view space-y-6 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-steel-gray pb-4">
+                    <div>
+                        <h2 class="text-base font-bold uppercase tracking-wider text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-hazard-yellow text-xl">sensors</span>
+                            Checkpoint Multi-Sensor Environmental Suites
+                        </h2>
+                        <p class="text-xs text-on-surface-variant mt-0.5">Soldered Sensors: MQ5(33), MQ7(34), MQ135(35), PIR(26), Sound(27), DHT11(15).</p>
+                    </div>
+                    <button onclick="openThresholdModal()" class="text-xs bg-surface-container hover:bg-surface-container-high border border-steel-gray px-3 py-1.5 rounded-sm text-hazard-yellow flex items-center gap-1 transition-colors">
+                        <span class="material-symbols-outlined text-sm">tune</span>
+                        <span>CONFIGURE SENSOR THRESHOLDS</span>
                     </button>
                 </div>
-            </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <!-- Chart 1: Gas Levels (MQ5, MQ7, MQ135) -->
-                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 shadow-md flex flex-col items-center">
-                    <div class="w-full flex justify-between items-center px-1 mb-2">
-                        <span class="text-xs font-semibold text-slate-300"><i class="fa-solid fa-fire text-amber-400 mr-1.5"></i> Gas Levels (Combustible / CO / Air Quality)</span>
-                        <span class="text-[10px] text-slate-500 font-mono">Auto 2s</span>
-                    </div>
-                    <img id="chart-gas" src="/api/charts/gas.png" alt="Gas Levels Chart" class="w-full h-auto rounded-lg border border-slate-800/80 bg-slate-950">
+                <!-- Checkpoints Grid -->
+                <div id="checkpoints-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- Populated dynamically by app.js -->
                 </div>
 
-                <!-- Chart 2: Personnel Vitals (Pulse / SpO2) -->
-                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 shadow-md flex flex-col items-center">
-                    <div class="w-full flex justify-between items-center px-1 mb-2">
-                        <span class="text-xs font-semibold text-slate-300"><i class="fa-solid fa-heart-pulse text-rose-400 mr-1.5"></i> Personnel Vitals (SpO2 % & Heart Rate BPM)</span>
-                        <span class="text-[10px] text-slate-500 font-mono">Auto 2s</span>
+                <!-- Dedicated Checkpoint Multi-Gas Chart -->
+                <div class="industrial-panel border-2 border-steel-gray rounded-sm p-4 space-y-3">
+                    <div class="flex justify-between items-center border-b border-steel-gray pb-2">
+                        <h3 class="text-xs font-bold text-on-surface uppercase tracking-wider flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-hazard-yellow text-sm">local_fire_department</span>
+                            Checkpoint Gas Sensor Telemetry (MQ5 / MQ7 / MQ135)
+                        </h3>
+                        <span class="text-[10px] text-on-surface-variant">ADC / PPM Levels</span>
                     </div>
-                    <img id="chart-vitals" src="/api/charts/vitals.png" alt="Vitals Chart" class="w-full h-auto rounded-lg border border-slate-800/80 bg-slate-950">
+                    <img id="chart-gas-dedicated" src="/api/charts/gas.png" alt="Gas Chart" class="w-full max-h-[300px] object-contain rounded-sm border border-steel-gray bg-carbon-black"/>
                 </div>
 
-                <!-- Chart 3: Noise & Acoustic Peaks (HW-484-V0.2) -->
-                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 shadow-md flex flex-col items-center">
-                    <div class="w-full flex justify-between items-center px-1 mb-2">
-                        <span class="text-xs font-semibold text-slate-300"><i class="fa-solid fa-waveform-lines text-cyan-400 mr-1.5"></i> Acoustic Peaks & Sudden Sound Spikes (HW-484)</span>
-                        <span class="text-[10px] text-slate-500 font-mono">Auto 2s</span>
+                <!-- Sensor Pin Mapping Reference -->
+                <div class="industrial-panel border border-steel-gray p-4 rounded-sm space-y-2 text-xs">
+                    <div class="text-hazard-yellow font-bold uppercase flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">memory</span>
+                        <span>Hardware Soldering Pin Map (ESP32 Checkpoint Unit #4)</span>
                     </div>
-                    <img id="chart-noise" src="/api/charts/noise.png" alt="Noise Chart" class="w-full h-auto rounded-lg border border-slate-800/80 bg-slate-950">
-                </div>
-
-                <!-- Chart 4: Environmental Conditions (DHT11) -->
-                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 shadow-md flex flex-col items-center">
-                    <div class="w-full flex justify-between items-center px-1 mb-2">
-                        <span class="text-xs font-semibold text-slate-300"><i class="fa-solid fa-temperature-half text-emerald-400 mr-1.5"></i> Temperature (°C) & Humidity (%)</span>
-                        <span class="text-[10px] text-slate-500 font-mono">Auto 2s</span>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-[10px] text-on-surface-variant pt-1 text-center">
+                        <div class="bg-carbon-black p-2 rounded-sm border border-steel-gray"><strong class="text-on-surface block">MQ5</strong> GPIO 33 (Combustible)</div>
+                        <div class="bg-carbon-black p-2 rounded-sm border border-steel-gray"><strong class="text-on-surface block">MQ7</strong> GPIO 34 (CO Carbon Monoxide)</div>
+                        <div class="bg-carbon-black p-2 rounded-sm border border-steel-gray"><strong class="text-on-surface block">MQ135</strong> GPIO 35 (Air Quality)</div>
+                        <div class="bg-carbon-black p-2 rounded-sm border border-steel-gray"><strong class="text-on-surface block">HW-416-B</strong> GPIO 26 (PIR Motion)</div>
+                        <div class="bg-carbon-black p-2 rounded-sm border border-steel-gray"><strong class="text-on-surface block">HW-484</strong> GPIO 27 (Sound Spike)</div>
+                        <div class="bg-carbon-black p-2 rounded-sm border border-steel-gray"><strong class="text-on-surface block">DHT11</strong> GPIO 15 (Temp & Humidity)</div>
                     </div>
-                    <img id="chart-environment" src="/api/charts/environment.png" alt="Environment Chart" class="w-full h-auto rounded-lg border border-slate-800/80 bg-slate-950">
                 </div>
             </div>
-        </section>
 
-        <!-- Section 4: Rover Inspection Station (Camera ESP32 #2 + Driver ESP32 #3) -->
-        <section class="space-y-3">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <div class="w-2 h-5 bg-purple-500 rounded-sm"></div>
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Rover Inspection & Steering Console (ESP32 #2 & #3)</h2>
-                </div>
-                <span class="text-xs text-slate-400">Manual Teleoperation & Live Visual Feed</span>
-            </div>
 
-            <!-- Prominent Rover Connection Status Banner -->
-            <div id="rover-connection-banner" class="bg-amber-950/40 border border-amber-500/40 text-amber-300 px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between shadow-lg transition-all">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-circle-notch fa-spin text-amber-400"></i>
-                    <span>SEARCHING FOR ROVER LINK OVER ESP-NOW / CHECKPOINT...</span>
-                </div>
-                <span class="text-[10px] font-mono text-slate-400">ESP32-ROVER-01</span>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                
-                <!-- Rover Camera Video Screen -->
-                <div class="lg:col-span-2 space-y-2">
-                    <div class="flex justify-between items-center text-xs text-slate-400">
-                        <span class="flex items-center gap-1.5">
-                            <i class="fa-solid fa-video text-purple-400"></i>
-                            <strong>LIVE ROVER OPTICAL FEED</strong>
-                        </span>
-                        <span class="font-mono text-emerald-400 text-[11px] flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> 5 FPS / LOW LATENCY
-                        </span>
+            <!-- ================= PAGE 5: TREND TELEMETRY ================= -->
+            <div id="view-charts" class="operational-view space-y-6 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-steel-gray pb-4">
+                    <div>
+                        <h2 class="text-base font-bold uppercase tracking-wider text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-safety-orange text-xl">monitoring</span>
+                            Real-Time Hazard & Vitals Trend Telemetry Workstation
+                        </h2>
+                        <p class="text-xs text-on-surface-variant mt-0.5">Matplotlib Live Render Engine (Auto-refreshed every 2 seconds).</p>
                     </div>
-
-                    <div class="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 aspect-[4/3] max-h-[380px] flex items-center justify-center">
-                        <img id="rover-camera-img" src="/api/camera/latest.jpg" alt="Rover Camera Feed" class="w-full h-full object-cover">
-                        
-                        <!-- Overlay HUD -->
-                        <div class="absolute top-3 left-3 bg-slate-950/80 backdrop-blur px-2.5 py-1 rounded text-[10px] font-mono text-cyan-300 border border-cyan-500/30">
-                            CAM #01 [OV2640]
-                        </div>
-                        <div id="rover-hud-status" class="absolute bottom-3 left-3 bg-slate-950/80 backdrop-blur px-2.5 py-1 rounded text-[10px] font-mono text-amber-300 border border-amber-500/30">
-                            STATUS: STOPPED
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Rover Steering Controls & Telemetry -->
-                <div class="flex flex-col justify-between space-y-4">
-                    
-                    <!-- Telemetry Stats -->
-                    <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3 space-y-2 text-xs">
-                        <div class="flex justify-between text-slate-400">
-                            <span>Rover Driver ID:</span>
-                            <strong class="text-slate-200 font-mono">ESP32-ROVER-01</strong>
-                        </div>
-                        <div class="flex justify-between text-slate-400">
-                            <span>Checkpoint Link:</span>
-                            <span id="rover-checkpoint-link" class="text-cyan-400 font-bold font-mono">CHECKPOINT 1 (Zone-A)</span>
-                        </div>
-                        <div class="flex justify-between text-slate-400">
-                            <span>Drive Mode:</span>
-                            <span class="text-emerald-400 font-semibold font-mono">MANUAL (KEYBOARD / UI)</span>
-                        </div>
-                        <div class="flex justify-between text-slate-400">
-                            <span>Auto-Stop Timeout:</span>
-                            <span class="text-cyan-400 font-mono">2.0s Failsafe</span>
-                        </div>
-                        <div class="flex justify-between text-slate-400">
-                            <span>Battery Status:</span>
-                            <span id="rover-battery-val" class="text-amber-400 font-mono font-bold">90%</span>
-                        </div>
-                    </div>
-
-                    <!-- Speed Slider -->
-                    <div class="space-y-1.5">
-                        <div class="flex justify-between text-xs text-slate-300">
-                            <span>Speed (PWM):</span>
-                            <span id="rover-speed-val" class="font-mono text-cyan-400 font-bold">200 / 255</span>
-                        </div>
-                        <input id="rover-speed-slider" type="range" min="80" max="255" value="200" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
-                    </div>
-
-                    <!-- Virtual D-Pad -->
-                    <div class="flex flex-col items-center justify-center space-y-2 py-2">
-                        <!-- Forward -->
-                        <button onmousedown="sendRoverCmd('FORWARD')" onmouseup="sendRoverCmd('STOP')" class="w-14 h-14 bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 border border-slate-700 active:scale-95 rounded-xl flex items-center justify-center text-xl text-cyan-400 hover:text-white transition shadow-lg">
-                            <i class="fa-solid fa-chevron-up"></i>
-                        </button>
-                        
-                        <!-- Left / Stop / Right -->
-                        <div class="flex items-center space-x-2">
-                            <button onmousedown="sendRoverCmd('LEFT')" onmouseup="sendRoverCmd('STOP')" class="w-14 h-14 bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 border border-slate-700 active:scale-95 rounded-xl flex items-center justify-center text-xl text-cyan-400 hover:text-white transition shadow-lg">
-                                <i class="fa-solid fa-chevron-left"></i>
-                            </button>
-                            <button onclick="sendRoverCmd('STOP')" class="w-14 h-14 bg-rose-900/80 hover:bg-rose-700 active:bg-rose-600 border border-rose-600 active:scale-95 rounded-xl flex items-center justify-center text-sm font-bold text-rose-200 transition shadow-lg shadow-rose-900/30">
-                                STOP
-                            </button>
-                            <button onmousedown="sendRoverCmd('RIGHT')" onmouseup="sendRoverCmd('STOP')" class="w-14 h-14 bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 border border-slate-700 active:scale-95 rounded-xl flex items-center justify-center text-xl text-cyan-400 hover:text-white transition shadow-lg">
-                                <i class="fa-solid fa-chevron-right"></i>
-                            </button>
-                        </div>
-
-                        <!-- Backward -->
-                        <button onmousedown="sendRoverCmd('BACKWARD')" onmouseup="sendRoverCmd('STOP')" class="w-14 h-14 bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 border border-slate-700 active:scale-95 rounded-xl flex items-center justify-center text-xl text-cyan-400 hover:text-white transition shadow-lg">
-                            <i class="fa-solid fa-chevron-down"></i>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-on-surface-variant">AUTO 2s</span>
+                        <button onclick="refreshCharts()" class="text-xs bg-surface-container hover:bg-surface-container-high border border-steel-gray px-3 py-1.5 rounded-sm text-on-surface flex items-center gap-1 transition-colors">
+                            <span class="material-symbols-outlined text-xs">sync</span>
+                            <span>REFRESH CHARTS</span>
                         </button>
                     </div>
-
-                    <div class="text-[10px] text-slate-500 text-center font-mono">
-                        Keys: <span class="text-slate-400">W, A, S, D</span> or Arrow Keys | <span class="text-slate-400">Space</span> = Stop
-                    </div>
-
                 </div>
 
+                <!-- 2x2 Charts Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <!-- Chart 1 -->
+                    <div class="industrial-panel border-2 border-steel-gray rounded-sm p-4 flex flex-col items-center">
+                        <div class="w-full flex justify-between items-center px-1 mb-2 text-xs">
+                            <span class="font-bold text-on-surface flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-hazard-yellow text-sm">local_fire_department</span>
+                                Gas Levels (Combustible / CO / Air Quality)
+                            </span>
+                            <span class="text-[10px] text-on-surface-variant">MQ5 • MQ7 • MQ135</span>
+                        </div>
+                        <img id="chart-gas" src="/api/charts/gas.png" alt="Gas Levels Chart" class="w-full h-auto rounded-sm border border-steel-gray bg-carbon-black"/>
+                    </div>
+
+                    <!-- Chart 2 -->
+                    <div class="industrial-panel border-2 border-steel-gray rounded-sm p-4 flex flex-col items-center">
+                        <div class="w-full flex justify-between items-center px-1 mb-2 text-xs">
+                            <span class="font-bold text-on-surface flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-critical-red text-sm">ecg_heart</span>
+                                Personnel Vitals (SpO2 % & Heart Rate BPM)
+                            </span>
+                            <span class="text-[10px] text-on-surface-variant">MAX30100</span>
+                        </div>
+                        <img id="chart-vitals" src="/api/charts/vitals.png" alt="Vitals Chart" class="w-full h-auto rounded-sm border border-steel-gray bg-carbon-black"/>
+                    </div>
+
+                    <!-- Chart 3 -->
+                    <div class="industrial-panel border-2 border-steel-gray rounded-sm p-4 flex flex-col items-center">
+                        <div class="w-full flex justify-between items-center px-1 mb-2 text-xs">
+                            <span class="font-bold text-on-surface flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-hazard-yellow text-sm">graphic_eq</span>
+                                Acoustic Peaks & Sound Spikes
+                            </span>
+                            <span class="text-[10px] text-on-surface-variant">HW-484-V0.2</span>
+                        </div>
+                        <img id="chart-noise" src="/api/charts/noise.png" alt="Noise Chart" class="w-full h-auto rounded-sm border border-steel-gray bg-carbon-black"/>
+                    </div>
+
+                    <!-- Chart 4 -->
+                    <div class="industrial-panel border-2 border-steel-gray rounded-sm p-4 flex flex-col items-center">
+                        <div class="w-full flex justify-between items-center px-1 mb-2 text-xs">
+                            <span class="font-bold text-on-surface flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-industrial-green text-sm">device_thermostat</span>
+                                Ambient Temperature (°C) & Humidity (%)
+                            </span>
+                            <span class="text-[10px] text-on-surface-variant">DHT11</span>
+                        </div>
+                        <img id="chart-environment" src="/api/charts/environment.png" alt="Environment Chart" class="w-full h-auto rounded-sm border border-steel-gray bg-carbon-black"/>
+                    </div>
+                </div>
             </div>
-        </section>
 
-        <!-- Section 5: Mesh Topology & Relaying Map -->
-        <section class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 text-xs space-y-3">
-            <div class="flex items-center justify-between">
-                <span class="font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <i class="fa-solid fa-diagram-project text-cyan-400"></i> ESP-NOW & Wi-Fi Mesh Relay Topology
-                </span>
-                <span class="text-[10px] text-slate-500">Autonomous Failover Routing</span>
+
+            <!-- ================= PAGE 6: RECON ROVER ================= -->
+            <div id="view-rover" class="operational-view space-y-6 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-steel-gray pb-4">
+                    <div>
+                        <h2 class="text-base font-bold uppercase tracking-wider text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-hazard-yellow text-xl">videocam</span>
+                            Recon Rover Inspection & Teleoperation Console
+                        </h2>
+                        <p class="text-xs text-on-surface-variant mt-0.5">ESP32 Camera #2 (OV2640) + Motor Driver #3 (L298N Dual H-Bridge).</p>
+                    </div>
+                </div>
+
+                <!-- Rover Connection Status Banner -->
+                <div id="rover-connection-banner" class="bg-surface-container-low border-2 border-steel-gray text-on-surface-variant px-4 py-2.5 rounded-sm text-xs flex items-center justify-between transition-all">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-safety-orange text-sm animate-spin">sync</span>
+                        <span>WAITING FOR ROVER TELEMETRY / CHECKPOINT HEARTBEAT...</span>
+                    </div>
+                    <span class="text-[10px] text-on-surface-variant">ESP32-ROVER-01</span>
+                </div>
+
+                <!-- Teleoperation Console Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 industrial-panel border-2 border-steel-gray rounded-sm p-5">
+                    <!-- Left: Large Live Video Canvas -->
+                    <div class="lg:col-span-2 space-y-2">
+                        <div class="flex justify-between items-center text-xs text-on-surface-variant">
+                            <span class="flex items-center gap-1.5 font-bold text-on-surface">
+                                <span class="material-symbols-outlined text-hazard-yellow text-sm">videocam</span>
+                                LIVE ROVER OPTICAL FEED [OV2640]
+                            </span>
+                            <span class="text-industrial-green text-[11px] flex items-center gap-1 font-bold">
+                                <span class="w-2 h-2 rounded-full bg-industrial-green animate-ping"></span> 5 FPS STREAM
+                            </span>
+                        </div>
+
+                        <div class="relative rounded-sm overflow-hidden border-2 border-steel-gray bg-carbon-black aspect-[4/3] max-h-[420px] flex items-center justify-center">
+                            <img id="rover-camera-img" src="/api/camera/latest.jpg" alt="Rover Camera Feed" class="w-full h-full object-cover"/>
+                            
+                            <!-- Overlay HUD elements -->
+                            <div class="absolute top-3 left-3 bg-carbon-black/85 backdrop-blur px-2.5 py-1 rounded-sm text-[10px] text-hazard-yellow border border-steel-gray">
+                                CAM-01 [OV2640 MINE FEED]
+                            </div>
+                            <div id="rover-hud-status" class="absolute bottom-3 left-3 bg-carbon-black/85 backdrop-blur px-2.5 py-1 rounded-sm text-[10px] text-on-surface border border-steel-gray">
+                                STATUS: STOPPED
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Steering Controls & Parameters -->
+                    <div class="flex flex-col justify-between space-y-5">
+                        <!-- Telemetry Stats Panel -->
+                        <div class="bg-carbon-black border border-steel-gray rounded-sm p-3.5 space-y-2 text-xs">
+                            <div class="flex justify-between text-on-surface-variant">
+                                <span>Rover Unit ID:</span>
+                                <strong class="text-on-surface">ESP32-ROVER-01</strong>
+                            </div>
+                            <div class="flex justify-between text-on-surface-variant">
+                                <span>Relay Node:</span>
+                                <span id="rover-checkpoint-link" class="text-hazard-yellow font-bold">CHECKPOINT 1 (Zone-A)</span>
+                            </div>
+                            <div class="flex justify-between text-on-surface-variant">
+                                <span>Drive Mode:</span>
+                                <span class="text-industrial-green font-semibold">MANUAL (W/A/S/D)</span>
+                            </div>
+                            <div class="flex justify-between text-on-surface-variant">
+                                <span>Battery Level:</span>
+                                <span id="rover-battery-val" class="text-hazard-yellow font-bold">90%</span>
+                            </div>
+                            <div class="flex justify-between text-on-surface-variant">
+                                <span>Failsafe Timeout:</span>
+                                <span class="text-on-surface">2.0s Auto-Stop</span>
+                            </div>
+                        </div>
+
+                        <!-- Speed Slider -->
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between text-xs text-on-surface">
+                                <span class="text-on-surface-variant">Drive Speed (PWM Duty):</span>
+                                <span id="rover-speed-val" class="text-hazard-yellow font-bold">200 / 255</span>
+                            </div>
+                            <input id="rover-speed-slider" type="range" min="80" max="255" value="200" class="w-full h-2 bg-steel-gray rounded appearance-none cursor-pointer accent-hazard-yellow"/>
+                        </div>
+
+                        <!-- Virtual D-Pad Controller -->
+                        <div class="flex flex-col items-center justify-center space-y-2 py-2">
+                            <!-- Forward -->
+                            <button onmousedown="sendRoverCmd('FORWARD')" onmouseup="sendRoverCmd('STOP')" class="w-14 h-14 bg-surface-container-low hover:bg-hazard-yellow hover:text-carbon-black active:scale-95 border-2 border-steel-gray rounded-sm flex items-center justify-center text-xl text-hazard-yellow transition-all shadow-md">
+                                <span class="material-symbols-outlined">expand_less</span>
+                            </button>
+                            
+                            <!-- Left / Stop / Right -->
+                            <div class="flex items-center space-x-2">
+                                <button onmousedown="sendRoverCmd('LEFT')" onmouseup="sendRoverCmd('STOP')" class="w-14 h-14 bg-surface-container-low hover:bg-hazard-yellow hover:text-carbon-black active:scale-95 border-2 border-steel-gray rounded-sm flex items-center justify-center text-xl text-hazard-yellow transition-all shadow-md">
+                                    <span class="material-symbols-outlined">chevron_left</span>
+                                </button>
+                                <button onclick="sendRoverCmd('STOP')" class="w-14 h-14 bg-critical-red/20 hover:bg-critical-red hover:text-carbon-black active:scale-95 border-2 border-critical-red rounded-sm flex items-center justify-center text-xs font-bold text-critical-red transition-all shadow-md">
+                                    STOP
+                                </button>
+                                <button onmousedown="sendRoverCmd('RIGHT')" onmouseup="sendRoverCmd('STOP')" class="w-14 h-14 bg-surface-container-low hover:bg-hazard-yellow hover:text-carbon-black active:scale-95 border-2 border-steel-gray rounded-sm flex items-center justify-center text-xl text-hazard-yellow transition-all shadow-md">
+                                    <span class="material-symbols-outlined">chevron_right</span>
+                                </button>
+                            </div>
+
+                            <!-- Backward -->
+                            <button onmousedown="sendRoverCmd('BACKWARD')" onmouseup="sendRoverCmd('STOP')" class="w-14 h-14 bg-surface-container-low hover:bg-hazard-yellow hover:text-carbon-black active:scale-95 border-2 border-steel-gray rounded-sm flex items-center justify-center text-xl text-hazard-yellow transition-all shadow-md">
+                                <span class="material-symbols-outlined">expand_more</span>
+                            </button>
+                        </div>
+
+                        <div class="text-[10px] text-on-surface-variant text-center">
+                            Keys: <span class="text-hazard-yellow font-bold">W, A, S, D</span> or Arrow Keys | <span class="text-critical-red font-bold">Space</span> = Stop
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div id="mesh-topology-view" class="grid grid-cols-1 md:grid-cols-4 gap-3 text-center">
-                <!-- Dynamically populated routing nodes -->
+
+            <!-- ================= PAGE 7: MESH NETWORK ================= -->
+            <div id="view-topology" class="operational-view space-y-6 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-steel-gray pb-4">
+                    <div>
+                        <h2 class="text-base font-bold uppercase tracking-wider text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-hazard-yellow text-xl">hub</span>
+                            ESP-NOW & Subterranean Mesh Relay Topology
+                        </h2>
+                        <p class="text-xs text-on-surface-variant mt-0.5">Autonomous failover multi-hop routing without underground internet dependency.</p>
+                    </div>
+                </div>
+
+                <!-- 4 Node Architecture Cards -->
+                <div id="mesh-topology-view" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                    <!-- Populated dynamically by app.js -->
+                </div>
+
+                <!-- Subterranean Routing Matrix -->
+                <div class="industrial-panel border-2 border-steel-gray rounded-sm p-5 space-y-4 text-xs">
+                    <h3 class="font-bold text-on-surface uppercase flex items-center gap-2">
+                        <span class="material-symbols-outlined text-hazard-yellow text-base">route</span>
+                        Subterranean Communication Path Matrix
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-[11px] text-on-surface-variant">
+                        <div class="bg-carbon-black p-3 rounded-sm border border-steel-gray space-y-1">
+                            <strong class="text-industrial-green uppercase block">1. Ingestion Layer</strong>
+                            <p>Worker Bands and Rover broadcast compact telemetry packets over 2.4 GHz ESP-NOW protocol.</p>
+                        </div>
+                        <div class="bg-carbon-black p-3 rounded-sm border border-steel-gray space-y-1">
+                            <strong class="text-hazard-yellow uppercase block">2. Multi-Hop Forwarding</strong>
+                            <p>Checkpoint nodes forward packets along tunnel chains if out of direct station antenna line-of-sight.</p>
+                        </div>
+                        <div class="bg-carbon-black p-3 rounded-sm border border-steel-gray space-y-1">
+                            <strong class="text-safety-orange uppercase block">3. Station Ingestion</strong>
+                            <p>Gateway checkpoint relays aggregated JSON packets over station Wi-Fi; rover commands broadcast via UDP.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </section>
 
-    </main>
+        </main>
+    </div>
 
-    <!-- Threshold Configuration Modal -->
-    <div id="threshold-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-cyan-400"></i> Configure Safety Alert Thresholds
+    <!-- Safety Threshold Configuration Modal -->
+    <div id="threshold-modal" class="fixed inset-0 bg-carbon-black/85 backdrop-blur-sm hidden items-center justify-center z-50 p-4 font-mono">
+        <div class="bg-surface-container border-2 border-steel-gray rounded-sm max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-steel-gray pb-3">
+                <h3 class="font-bold text-sm text-hazard-yellow flex items-center gap-2">
+                    <span class="material-symbols-outlined text-base">tune</span>
+                    Safety Alert Thresholds
                 </h3>
-                <button onclick="closeThresholdModal()" class="text-slate-400 hover:text-slate-200 text-lg">&times;</button>
+                <button onclick="closeThresholdModal()" class="text-on-surface-variant hover:text-on-surface text-lg cursor-pointer">&times;</button>
             </div>
 
             <div class="space-y-3 text-xs">
                 <div>
-                    <label class="block text-slate-400 mb-1">SpO2 Critical Minimum (%):</label>
-                    <input id="th-spo2-critical" type="number" step="0.5" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-1.5 text-slate-200">
+                    <label class="block text-on-surface-variant mb-1">SpO2 Critical Minimum (%):</label>
+                    <input id="th-spo2-critical" type="number" step="0.5" class="w-full bg-carbon-black border border-steel-gray rounded-sm px-3 py-1.5 text-on-surface focus:outline-none focus:border-hazard-yellow"/>
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">MQ5 Combustible Gas Danger (ADC):</label>
-                    <input id="th-mq5-critical" type="number" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-1.5 text-slate-200">
+                    <label class="block text-on-surface-variant mb-1">MQ5 Combustible Gas Danger (ADC):</label>
+                    <input id="th-mq5-critical" type="number" class="w-full bg-carbon-black border border-steel-gray rounded-sm px-3 py-1.5 text-on-surface focus:outline-none focus:border-hazard-yellow"/>
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">MQ7 Carbon Monoxide Danger (ADC):</label>
-                    <input id="th-mq7-critical" type="number" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-1.5 text-slate-200">
+                    <label class="block text-on-surface-variant mb-1">MQ7 Carbon Monoxide Danger (ADC):</label>
+                    <input id="th-mq7-critical" type="number" class="w-full bg-carbon-black border border-steel-gray rounded-sm px-3 py-1.5 text-on-surface focus:outline-none focus:border-hazard-yellow"/>
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">MQ135 Air Quality Danger (ADC):</label>
-                    <input id="th-mq135-critical" type="number" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-1.5 text-slate-200">
+                    <label class="block text-on-surface-variant mb-1">MQ135 Air Quality Danger (ADC):</label>
+                    <input id="th-mq135-critical" type="number" class="w-full bg-carbon-black border border-steel-gray rounded-sm px-3 py-1.5 text-on-surface focus:outline-none focus:border-hazard-yellow"/>
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">Sound Spike Threshold (HW-484-V0.2):</label>
-                    <input id="th-sound-spike" type="number" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-1.5 text-slate-200">
+                    <label class="block text-on-surface-variant mb-1">Sound Spike Threshold (HW-484):</label>
+                    <input id="th-sound-spike" type="number" class="w-full bg-carbon-black border border-steel-gray rounded-sm px-3 py-1.5 text-on-surface focus:outline-none focus:border-hazard-yellow"/>
                 </div>
             </div>
 
-            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
-                <button onclick="closeThresholdModal()" class="px-3 py-1.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs">Cancel</button>
-                <button onclick="saveThresholds()" class="px-4 py-1.5 rounded bg-cyan-600 text-slate-950 font-bold hover:bg-cyan-500 text-xs">Save Thresholds</button>
+            <div class="flex justify-end space-x-2 pt-2 border-t border-steel-gray">
+                <button onclick="closeThresholdModal()" class="px-3 py-1.5 rounded-sm bg-surface-container-low text-on-surface-variant hover:text-on-surface border border-steel-gray text-xs">CANCEL</button>
+                <button onclick="saveThresholds()" class="px-4 py-1.5 rounded-sm bg-hazard-yellow text-carbon-black font-bold hover:bg-primary-fixed text-xs transition-colors">SAVE THRESHOLDS</button>
             </div>
         </div>
     </div>
 
-    <!-- Application JavaScript -->
+    <!-- Application JS -->
     <script src="/static/js/app.js"></script>
 </body>
 </html>

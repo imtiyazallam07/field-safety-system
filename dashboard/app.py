@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
+import report_service
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
@@ -186,8 +187,62 @@ def generate_default_camera_frame():
 # ================= API ENDPOINTS =================
 
 @app.route('/')
-def index():
-    return render_template('index.html')
+@app.route('/landing')
+def landing_page():
+    """Serves the CoalGov AI SIH Landing Page."""
+    return render_template('landing.html')
+
+@app.route('/dashboard')
+@app.route('/station')
+def dashboard_page():
+    """Serves the Central Command Center Overview."""
+    return render_template('index.html', initial_view='overview')
+
+@app.route('/incidents')
+def incidents_page():
+    """Serves the Dedicated Incident Stream View."""
+    return render_template('index.html', initial_view='incidents')
+
+@app.route('/workers')
+def workers_page():
+    """Serves the Dedicated Worker Vitals View."""
+    return render_template('index.html', initial_view='workers')
+
+@app.route('/checkpoints')
+def checkpoints_page():
+    """Serves the Dedicated Checkpoint Suite View."""
+    return render_template('index.html', initial_view='checkpoints')
+
+@app.route('/telemetry')
+def telemetry_page():
+    """Serves the Dedicated Trend Telemetry View."""
+    return render_template('index.html', initial_view='charts')
+
+@app.route('/rover')
+def rover_page():
+    """Serves the Dedicated Recon Rover Console View."""
+    return render_template('index.html', initial_view='rover')
+
+@app.route('/network')
+def network_page():
+    """Serves the Dedicated Mesh Network Topology View."""
+    return render_template('index.html', initial_view='topology')
+
+@app.route('/reports')
+def reports_page():
+    """Serves the AI Safety Analysis Report page."""
+    return render_template('reports.html')
+
+@app.route('/api/report/generate', methods=['POST'])
+def generate_report():
+    """Generates an AI-powered safety report from existing data (read-only)."""
+    with state_lock:
+        snapshot = report_service.build_report_snapshot(
+            checkpoints, bands, rover_state, alerts, thresholds
+        )
+    gemini_analysis = report_service.call_gemini_analysis(snapshot)
+    full_report = report_service.generate_full_report(snapshot, gemini_analysis)
+    return jsonify(full_report), 200
 
 @app.route('/api/telemetry', methods=['POST'])
 def receive_telemetry():
@@ -557,18 +612,18 @@ def handle_thresholds():
 @app.route('/api/charts/<chart_type>.png')
 def generate_chart(chart_type):
     fig, ax = plt.subplots(figsize=(7.5, 3.8), dpi=100)
-    fig.patch.set_facecolor('#0f172a')
-    ax.set_facecolor('#1e293b')
+    fig.patch.set_facecolor('#0A0A0B')
+    ax.set_facecolor('#131314')
 
-    ax.tick_params(colors='#94a3b8', labelsize=8)
+    ax.tick_params(colors='#d3c5ac', labelsize=8)
     for spine in ax.spines.values():
-        spine.set_color('#334155')
-    ax.grid(True, color='#334155', linestyle='--', alpha=0.5)
+        spine.set_color('#2D2E32')
+    ax.grid(True, color='#2D2E32', linestyle='--', alpha=0.6)
 
     with state_lock:
         if chart_type == 'gas':
-            ax.set_title('Live Gas Levels (MQ5 / MQ7 / MQ135)', color='#f8fafc', fontsize=11, fontweight='bold', pad=10)
-            ax.set_ylabel('Sensor Reading (ADC / PPM)', color='#94a3b8', fontsize=9)
+            ax.set_title('Live Gas Levels (MQ5 / MQ7 / MQ135)', color='#FBBF24', fontsize=11, fontweight='bold', pad=10)
+            ax.set_ylabel('Sensor Reading (ADC / PPM)', color='#d3c5ac', fontsize=9)
             has_data = False
 
             for cp_id, cp in checkpoints.items():
@@ -583,21 +638,21 @@ def generate_chart(chart_type):
                 mq7_vals = [h["mq7"] for h in hist]
                 mq135_vals = [h["mq135"] for h in hist]
 
-                ax.plot(indices, mq5_vals, label=f'{loc} - MQ5 (Combustible)', color='#f97316', linewidth=1.8)
-                ax.plot(indices, mq7_vals, label=f'{loc} - MQ7 (CO)', color='#ef4444', linewidth=1.8, linestyle='--')
-                ax.plot(indices, mq135_vals, label=f'{loc} - MQ135 (Air Quality)', color='#38bdf8', linewidth=1.8, linestyle=':')
+                ax.plot(indices, mq5_vals, label=f'{loc} - MQ5 (Combustible)', color='#FBBF24', linewidth=1.8)
+                ax.plot(indices, mq7_vals, label=f'{loc} - MQ7 (CO)', color='#FF0000', linewidth=1.8, linestyle='--')
+                ax.plot(indices, mq135_vals, label=f'{loc} - MQ135 (Air Quality)', color='#F97316', linewidth=1.8, linestyle=':')
 
-            ax.axhline(y=thresholds["mq5_critical"], color='#dc2626', linestyle='-.', linewidth=1.5, label=f'MQ5 Danger ({thresholds["mq5_critical"]:.0f})')
-            ax.axhline(y=thresholds["mq7_critical"], color='#b91c1c', linestyle='-.', linewidth=1.5, label=f'MQ7 Danger ({thresholds["mq7_critical"]:.0f})')
+            ax.axhline(y=thresholds["mq5_critical"], color='#FF0000', linestyle='-.', linewidth=1.5, label=f'MQ5 Danger ({thresholds["mq5_critical"]:.0f})')
+            ax.axhline(y=thresholds["mq7_critical"], color='#93000a', linestyle='-.', linewidth=1.5, label=f'MQ7 Danger ({thresholds["mq7_critical"]:.0f})')
 
             if not has_data:
-                ax.text(0.5, 0.5, 'Waiting for Checkpoint Gas Telemetry...', color='#64748b', ha='center', va='center', transform=ax.transAxes)
+                ax.text(0.5, 0.5, 'Waiting for Checkpoint Gas Telemetry...', color='#9c8f79', ha='center', va='center', transform=ax.transAxes)
 
         elif chart_type == 'noise':
-            ax.set_title('Site Noise & Sound Peak Levels (HW-484-V0.2)', color='#f8fafc', fontsize=11, fontweight='bold', pad=10)
-            ax.set_ylabel('Sound Peak Amplitude (ADC)', color='#94a3b8', fontsize=9)
+            ax.set_title('Site Noise & Sound Peak Levels (HW-484-V0.2)', color='#FBBF24', fontsize=11, fontweight='bold', pad=10)
+            ax.set_ylabel('Sound Peak Amplitude (ADC)', color='#d3c5ac', fontsize=9)
             has_data = False
-            colors = ['#eab308', '#06b6d4', '#10b981', '#f43f5e']
+            colors = ['#FBBF24', '#F97316', '#22C55E', '#FF0000']
 
             for i, (cp_id, cp) in enumerate(checkpoints.items()):
                 hist = list(cp["history"])
@@ -609,14 +664,14 @@ def generate_chart(chart_type):
                 loc = cp.get("location", f"CP-{cp_id}")
                 ax.plot(indices, sound_vals, label=f'{loc} Sound', color=colors[i % len(colors)], linewidth=2.0)
 
-            ax.axhline(y=thresholds["sound_spike_threshold"], color='#ef4444', linestyle='--', linewidth=1.6, label=f'Explosion Spike Threshold ({thresholds["sound_spike_threshold"]:.0f})')
+            ax.axhline(y=thresholds["sound_spike_threshold"], color='#FF0000', linestyle='--', linewidth=1.6, label=f'Explosion Spike Threshold ({thresholds["sound_spike_threshold"]:.0f})')
 
             if not has_data:
-                ax.text(0.5, 0.5, 'Waiting for Acoustic Sensor Telemetry...', color='#64748b', ha='center', va='center', transform=ax.transAxes)
+                ax.text(0.5, 0.5, 'Waiting for Acoustic Sensor Telemetry...', color='#9c8f79', ha='center', va='center', transform=ax.transAxes)
 
         elif chart_type == 'environment':
-            ax.set_title('Environmental Conditions (DHT11 Temp & Humidity)', color='#f8fafc', fontsize=11, fontweight='bold', pad=10)
-            ax.set_ylabel('Temp (°C) / Humidity (%)', color='#94a3b8', fontsize=9)
+            ax.set_title('Environmental Conditions (DHT11 Temp & Humidity)', color='#FBBF24', fontsize=11, fontweight='bold', pad=10)
+            ax.set_ylabel('Temp (°C) / Humidity (%)', color='#d3c5ac', fontsize=9)
             has_data = False
 
             for cp_id, cp in checkpoints.items():
@@ -629,19 +684,19 @@ def generate_chart(chart_type):
                 t_vals = [h["temperature"] for h in hist]
                 h_vals = [h["humidity"] for h in hist]
 
-                ax.plot(indices, t_vals, label=f'{loc} Temp (°C)', color='#f43f5e', linewidth=1.8)
-                ax.plot(indices, h_vals, label=f'{loc} Humidity (%)', color='#0ea5e9', linewidth=1.8, linestyle='--')
+                ax.plot(indices, t_vals, label=f'{loc} Temp (°C)', color='#F97316', linewidth=1.8)
+                ax.plot(indices, h_vals, label=f'{loc} Humidity (%)', color='#22C55E', linewidth=1.8, linestyle='--')
 
-            ax.axhline(y=thresholds["temp_max"], color='#f97316', linestyle=':', linewidth=1.4, label=f'Max Safe Temp ({thresholds["temp_max"]:.0f}°C)')
+            ax.axhline(y=thresholds["temp_max"], color='#FF0000', linestyle=':', linewidth=1.4, label=f'Max Safe Temp ({thresholds["temp_max"]:.0f}°C)')
 
             if not has_data:
-                ax.text(0.5, 0.5, 'Waiting for DHT11 Telemetry...', color='#64748b', ha='center', va='center', transform=ax.transAxes)
+                ax.text(0.5, 0.5, 'Waiting for DHT11 Telemetry...', color='#9c8f79', ha='center', va='center', transform=ax.transAxes)
 
         elif chart_type == 'vitals':
-            ax.set_title('Personnel Vitals (SpO2 & Heart Rate)', color='#f8fafc', fontsize=11, fontweight='bold', pad=10)
-            ax.set_ylabel('SpO2 (%) / Pulse (BPM)', color='#94a3b8', fontsize=9)
+            ax.set_title('Personnel Vitals (SpO2 & Heart Rate)', color='#FBBF24', fontsize=11, fontweight='bold', pad=10)
+            ax.set_ylabel('SpO2 (%) / Pulse (BPM)', color='#d3c5ac', fontsize=9)
             has_data = False
-            colors = ['#10b981', '#6366f1', '#f43f5e']
+            colors = ['#22C55E', '#FBBF24', '#F97316']
 
             for i, (b_id, b) in enumerate(bands.items()):
                 hist = list(b["history"])
@@ -654,15 +709,15 @@ def generate_chart(chart_type):
                 pulse_vals = [h["pulse_bpm"] for h in hist]
 
                 ax.plot(indices, spo2_vals, label=f'{name} SpO2 (%)', color=colors[i % len(colors)], linewidth=2.0)
-                ax.plot(indices, pulse_vals, label=f'{name} Pulse (BPM)', color='#fbbf24', linewidth=1.5, linestyle='--')
+                ax.plot(indices, pulse_vals, label=f'{name} Pulse (BPM)', color='#FBBF24', linewidth=1.5, linestyle='--')
 
-            ax.axhline(y=thresholds["spo2_critical"], color='#ef4444', linestyle='--', linewidth=1.6, label=f'Critical SpO2 ({thresholds["spo2_critical"]:.0f}%)')
-            ax.axhline(y=thresholds["spo2_warning"], color='#eab308', linestyle=':', linewidth=1.4, label=f'Warning SpO2 ({thresholds["spo2_warning"]:.0f}%)')
+            ax.axhline(y=thresholds["spo2_critical"], color='#FF0000', linestyle='--', linewidth=1.6, label=f'Critical SpO2 ({thresholds["spo2_critical"]:.0f}%)')
+            ax.axhline(y=thresholds["spo2_warning"], color='#F97316', linestyle=':', linewidth=1.4, label=f'Warning SpO2 ({thresholds["spo2_warning"]:.0f}%)')
 
             if not has_data:
-                ax.text(0.5, 0.5, 'Waiting for Worker Band Telemetry...', color='#64748b', ha='center', va='center', transform=ax.transAxes)
+                ax.text(0.5, 0.5, 'Waiting for Worker Band Telemetry...', color='#9c8f79', ha='center', va='center', transform=ax.transAxes)
 
-        ax.legend(loc='upper right', facecolor='#0f172a', edgecolor='#334155', fontsize=7, labelcolor='#e2e8f0')
+        ax.legend(loc='upper right', facecolor='#0A0A0B', edgecolor='#2D2E32', fontsize=7, labelcolor='#e5e2e3')
 
     fig.tight_layout()
     img_buf = io.BytesIO()

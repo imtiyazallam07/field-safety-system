@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Safety Analysis Report | CoalGov AI</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="/static/css/style.css"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "background": "#131314", "surface": "#131314", "carbon-black": "#0A0A0B",
+                        "steel-gray": "#2D2E32", "surface-container-lowest": "#0e0e0f",
+                        "surface-container-low": "#1c1b1c", "surface-container": "#201f20",
+                        "surface-container-high": "#2a2a2b", "surface-container-highest": "#353436",
+                        "on-surface": "#e5e2e3", "on-surface-variant": "#d3c5ac",
+                        "hazard-yellow": "#FBBF24", "safety-orange": "#F97316",
+                        "industrial-green": "#22C55E", "critical-red": "#FF0000",
+                    },
+                    fontFamily: { "sans": ["Inter","sans-serif"], "mono": ["JetBrains Mono","monospace"] }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            body { background: #fff !important; color: #111 !important; }
+            nav, header, #report-controls, .no-print { display: none !important; }
+            .print-break { page-break-before: always; }
+            #report-container { padding: 0 !important; max-width: 100% !important; }
+            .industrial-panel { border-color: #ccc !important; background: #f9f9f9 !important; }
+            .text-hazard-yellow, .text-safety-orange, .text-industrial-green { color: #333 !important; }
+            .text-critical-red { color: #c00 !important; }
+            .text-on-surface { color: #111 !important; }
+            .text-on-surface-variant { color: #555 !important; }
+            .bg-carbon-black, .bg-surface-container-low, .bg-surface-container { background: #f5f5f5 !important; }
+            .border-steel-gray { border-color: #ddd !important; }
+        }
+    </style>
+</head>
+<body class="bg-carbon-black text-on-surface antialiased flex h-screen overflow-hidden coal-dust-bg selection:bg-hazard-yellow selection:text-carbon-black font-sans">
+    <div class="coal-dust-overlay"></div>
+
+    <!-- Sidebar -->
+    <nav class="hidden md:flex flex-col h-full w-72 bg-surface-container/95 backdrop-blur border-r-2 border-steel-gray py-6 flex-shrink-0 z-40 relative">
+        <div class="px-6 mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-sm bg-gradient-to-br from-hazard-yellow to-safety-orange flex items-center justify-center shadow-lg shadow-hazard-yellow/20">
+                    <span class="material-symbols-outlined text-carbon-black text-2xl font-bold">shield_with_heart</span>
+                </div>
+                <div>
+                    <h2 class="font-bold text-lg tracking-wider text-hazard-yellow font-sans leading-none">COALGOV AI</h2>
+                    <p class="font-mono text-[10px] text-on-surface-variant tracking-widest mt-1 uppercase">Field Safety Unit</p>
+                </div>
+            </div>
+            <div class="mt-5 p-2.5 industrial-panel rounded-sm flex items-center gap-3">
+                <div class="w-9 h-9 rounded-sm border border-steel-gray bg-carbon-black flex items-center justify-center text-hazard-yellow font-bold font-mono text-sm">FS</div>
+                <div class="overflow-hidden flex-1">
+                    <div class="font-mono text-xs text-on-surface font-bold truncate">STATION-01</div>
+                    <div class="font-mono text-[10px] text-on-surface-variant truncate">Live Telemetry Node</div>
+                </div>
+                <div class="flex items-center gap-1 bg-surface-container-highest px-1.5 py-0.5 rounded border border-steel-gray">
+                    <span class="w-1.5 h-1.5 rounded-full bg-industrial-green animate-pulse"></span>
+                    <span class="font-mono text-[9px] text-industrial-green font-bold">ONLINE</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-4 space-y-1.5 font-mono text-xs">
+            <a href="/dashboard" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">dashboard</span>
+                <span class="tracking-wide">Command Center</span>
+            </a>
+            <a href="/incidents" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">warning</span>
+                <span class="tracking-wide">Incident Stream</span>
+            </a>
+            <a href="/workers" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">engineering</span>
+                <span class="tracking-wide">Worker Vitals</span>
+            </a>
+            <a href="/checkpoints" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">verified_user</span>
+                <span class="tracking-wide">Checkpoint Suite</span>
+            </a>
+            <a href="/telemetry" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">monitoring</span>
+                <span class="tracking-wide">Trend Telemetry</span>
+            </a>
+            <a href="/rover" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">settings_remote</span>
+                <span class="tracking-wide">Recon Rover</span>
+            </a>
+            <a href="/network" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group">
+                <span class="material-symbols-outlined text-lg">hub</span>
+                <span class="tracking-wide">Mesh Network</span>
+            </a>
+
+            <!-- Divider -->
+            <div class="border-t border-steel-gray my-2"></div>
+
+            <a href="/reports" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 bg-surface-container-high border-l-4 border-hazard-yellow text-hazard-yellow rounded-r-sm font-bold transition-all text-left group">
+                <span class="material-symbols-outlined text-lg">description</span>
+                <span class="tracking-wide">AI Safety Report</span>
+            </a>
+        </div>
+
+        <div class="px-4 mt-auto pt-4 border-t-2 border-steel-gray space-y-2">
+            <a href="/" class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-surface-container-low hover:bg-surface-container-high border border-steel-gray text-on-surface font-mono text-xs rounded-sm transition-colors group">
+                <span class="material-symbols-outlined text-sm text-hazard-yellow">arrow_back</span>
+                <span>PROJECT OVERVIEW</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col min-w-0 bg-transparent relative z-10 overflow-hidden">
+        <!-- Top Bar -->
+        <header class="flex justify-between items-center w-full px-4 md:px-8 h-16 bg-surface-container/90 backdrop-blur border-b-2 border-steel-gray flex-shrink-0 z-30 font-mono no-print">
+            <div class="flex items-center gap-3">
+                <div class="flex flex-col">
+                    <span class="text-xs font-bold text-hazard-yellow uppercase tracking-wider">AI SAFETY REPORT</span>
+                    <span class="text-[10px] text-on-surface-variant">Gemini-Powered Mine Safety Analysis</span>
+                </div>
+            </div>
+            <div id="report-controls" class="flex items-center gap-2 text-xs">
+                <button onclick="generateReport()" id="btn-generate" class="bg-hazard-yellow hover:bg-primary-fixed text-carbon-black font-bold px-4 py-1.5 rounded-sm flex items-center gap-1.5 transition-colors">
+                    <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                    <span>GENERATE REPORT</span>
+                </button>
+                <button onclick="window.print()" id="btn-export" class="bg-surface-container-low hover:bg-surface-container-high border border-steel-gray text-on-surface px-3 py-1.5 rounded-sm flex items-center gap-1 transition-colors hidden">
+                    <span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+                    <span>EXPORT PDF</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Report Body -->
+        <main class="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-thin font-mono">
+            <div id="report-container" class="max-w-5xl mx-auto space-y-6">
+
+                <!-- Initial State: Prompt to Generate -->
+                <div id="report-initial" class="industrial-panel border-2 border-steel-gray rounded-sm p-12 text-center space-y-4">
+                    <span class="material-symbols-outlined text-hazard-yellow text-6xl">description</span>
+                    <h2 class="text-lg font-bold text-on-surface uppercase tracking-wider">AI-Powered Mine Safety Report</h2>
+                    <p class="text-sm text-on-surface-variant max-w-lg mx-auto leading-relaxed">
+                        Generate a comprehensive safety analysis report from the current monitoring station telemetry.
+                        Google Gemini will analyze the existing sensor data, incident history, and worker vitals
+                        to provide risk assessments and actionable recommendations.
+                    </p>
+                    <div class="flex flex-col items-center gap-2 pt-2">
+                        <button onclick="generateReport()" class="bg-hazard-yellow hover:bg-primary-fixed text-carbon-black font-bold px-6 py-2.5 rounded-sm flex items-center gap-2 transition-colors text-sm">
+                            <span class="material-symbols-outlined text-base">auto_awesome</span>
+                            GENERATE SAFETY REPORT
+                        </button>
+                        <span class="text-[10px] text-on-surface-variant">Uses existing backend data only. No hardware modification.</span>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="report-loading" class="industrial-panel border-2 border-steel-gray rounded-sm p-12 text-center space-y-4 hidden">
+                    <div class="w-12 h-12 mx-auto border-4 border-steel-gray border-t-hazard-yellow rounded-full animate-spin"></div>
+                    <h3 class="text-sm font-bold text-hazard-yellow uppercase">Generating Safety Analysis Report...</h3>
+                    <p class="text-xs text-on-surface-variant">Reading system telemetry snapshot and consulting Gemini AI.</p>
+                </div>
+
+                <!-- Report Output -->
+                <div id="report-output" class="space-y-6 hidden">
+
+                    <!-- Report Header -->
+                    <div class="industrial-panel border-2 border-hazard-yellow rounded-sm p-6 space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="material-symbols-outlined text-hazard-yellow text-2xl">shield_with_heart</span>
+                                    <h1 class="text-lg font-bold text-hazard-yellow uppercase tracking-wider font-sans">CoalGov AI — Safety Analysis Report</h1>
+                                </div>
+                                <p class="text-xs text-on-surface-variant">AI-Powered Underground Coal Mine Safety Assessment</p>
+                            </div>
+                            <div class="text-right text-xs text-on-surface-variant space-y-0.5">
+                                <div>Station: <strong class="text-on-surface" id="rpt-station">STATION-01</strong></div>
+                                <div>Generated: <strong class="text-on-surface" id="rpt-timestamp">--</strong></div>
+                            </div>
+                        </div>
+
+                        <!-- Overall Status Badge -->
+                        <div class="flex items-center gap-3 pt-2 border-t border-steel-gray">
+                            <div id="rpt-status-badge" class="px-4 py-2 rounded-sm text-sm font-bold uppercase tracking-wider">
+                                --
+                            </div>
+                            <p id="rpt-summary" class="text-xs text-on-surface-variant flex-1 leading-relaxed">--</p>
+                        </div>
+                    </div>
+
+                    <!-- Key Metrics Grid -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-surface-container-low border-2 border-steel-gray rounded-sm p-4 flex flex-col justify-between h-24">
+                            <span class="text-xs text-on-surface-variant uppercase flex items-center justify-between">
+                                <span>Checkpoints</span><span class="material-symbols-outlined text-hazard-yellow text-sm">cell_tower</span>
+                            </span>
+                            <span class="text-2xl font-bold text-hazard-yellow" id="rpt-cp-count">0</span>
+                        </div>
+                        <div class="bg-surface-container-low border-2 border-steel-gray rounded-sm p-4 flex flex-col justify-between h-24">
+                            <span class="text-xs text-on-surface-variant uppercase flex items-center justify-between">
+                                <span>Workers</span><span class="material-symbols-outlined text-industrial-green text-sm">engineering</span>
+                            </span>
+                            <span class="text-2xl font-bold text-industrial-green" id="rpt-worker-count">0</span>
+                        </div>
+                        <div class="bg-surface-container-low border-2 border-steel-gray rounded-sm p-4 flex flex-col justify-between h-24">
+                            <span class="text-xs text-on-surface-variant uppercase flex items-center justify-between">
+                                <span>Critical Alerts</span><span class="material-symbols-outlined text-critical-red text-sm">emergency</span>
+                            </span>
+                            <span class="text-2xl font-bold text-critical-red" id="rpt-critical-count">0</span>
+                        </div>
+                        <div class="bg-surface-container-low border-2 border-steel-gray rounded-sm p-4 flex flex-col justify-between h-24">
+                            <span class="text-xs text-on-surface-variant uppercase flex items-center justify-between">
+                                <span>Rover</span><span class="material-symbols-outlined text-safety-orange text-sm">smart_toy</span>
+                            </span>
+                            <span class="text-sm font-bold text-safety-orange uppercase" id="rpt-rover-status">OFFLINE</span>
+                        </div>
+                    </div>
+
+                    <!-- SECTION: Data Availability -->
+                    <div class="industrial-panel border border-steel-gray rounded-sm p-4 space-y-2 text-xs">
+                        <h3 class="font-bold text-on-surface uppercase flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-hazard-yellow text-base">info</span>
+                            Data Availability & Limitations
+                        </h3>
+                        <div id="rpt-data-availability" class="space-y-1 text-on-surface-variant">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- SECTION: Incident Summary -->
+                    <div class="industrial-panel border-2 border-steel-gray rounded-sm p-4 space-y-3">
+                        <h3 class="font-bold text-on-surface uppercase flex items-center gap-1.5 border-b border-steel-gray pb-2">
+                            <span class="material-symbols-outlined text-critical-red text-base">notifications_active</span>
+                            Incident Summary <span class="text-[10px] text-on-surface-variant font-normal ml-1">(MEASURED DATA)</span>
+                        </h3>
+                        <div id="rpt-incidents" class="space-y-2 max-h-[300px] overflow-y-auto scrollbar-thin">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- SECTION: Checkpoint Analysis -->
+                    <div class="industrial-panel border-2 border-steel-gray rounded-sm p-4 space-y-3">
+                        <h3 class="font-bold text-on-surface uppercase flex items-center gap-1.5 border-b border-steel-gray pb-2">
+                            <span class="material-symbols-outlined text-hazard-yellow text-base">sensors</span>
+                            Checkpoint Environmental Sensor Analysis <span class="text-[10px] text-on-surface-variant font-normal ml-1">(MEASURED DATA)</span>
+                        </h3>
+                        <div id="rpt-checkpoints" class="space-y-3">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- SECTION: Worker Safety -->
+                    <div class="industrial-panel border-2 border-steel-gray rounded-sm p-4 space-y-3">
+                        <h3 class="font-bold text-on-surface uppercase flex items-center gap-1.5 border-b border-steel-gray pb-2">
+                            <span class="material-symbols-outlined text-industrial-green text-base">monitor_heart</span>
+                            Worker Safety Summary <span class="text-[10px] text-on-surface-variant font-normal ml-1">(MEASURED DATA)</span>
+                        </h3>
+                        <div id="rpt-workers" class="space-y-3">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- SECTION: AI Analysis (Gemini) -->
+                    <div class="industrial-panel border-2 border-hazard-yellow/60 rounded-sm p-5 space-y-4 bg-hazard-yellow/[0.02] print-break">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-hazard-yellow uppercase flex items-center gap-1.5 text-sm">
+                                <span class="material-symbols-outlined text-base">auto_awesome</span>
+                                Gemini AI Safety Analysis
+                            </h3>
+                            <div class="flex items-center gap-2">
+                                <span id="rpt-ai-confidence" class="text-[10px] px-2 py-0.5 rounded-sm border border-steel-gray bg-carbon-black text-on-surface-variant">--</span>
+                                <span id="rpt-ai-source" class="text-[10px] px-2 py-0.5 rounded-sm border border-hazard-yellow/30 bg-hazard-yellow/10 text-hazard-yellow">--</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-carbon-black border border-steel-gray rounded-sm p-3 text-[10px] text-on-surface-variant flex items-start gap-2">
+                            <span class="material-symbols-outlined text-hazard-yellow text-sm mt-0.5">info</span>
+                            <span>The following analysis is generated by AI based on the available telemetry snapshot.
+                            AI interpretations and recommendations should be verified by qualified mine safety personnel.
+                            Clearly distinguish between <strong class="text-on-surface">measured data</strong>,
+                            <strong class="text-hazard-yellow">AI interpretation</strong>, and
+                            <strong class="text-safety-orange">recommended actions</strong>.</span>
+                        </div>
+
+                        <!-- Observations -->
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold text-on-surface uppercase flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm text-hazard-yellow">visibility</span>
+                                Key Observations <span class="text-[10px] text-on-surface-variant font-normal ml-1">(AI INTERPRETATION)</span>
+                            </h4>
+                            <div id="rpt-observations" class="space-y-2">
+                                <!-- Rendered dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Risk Patterns -->
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold text-on-surface uppercase flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm text-safety-orange">pattern</span>
+                                Detected Risk Patterns <span class="text-[10px] text-on-surface-variant font-normal ml-1">(AI INTERPRETATION)</span>
+                            </h4>
+                            <div id="rpt-risks" class="space-y-2">
+                                <!-- Rendered dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Recommendations -->
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold text-on-surface uppercase flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm text-industrial-green">task_alt</span>
+                                Recommended Actions <span class="text-[10px] text-on-surface-variant font-normal ml-1">(AI RECOMMENDATION)</span>
+                            </h4>
+                            <div id="rpt-recommendations" class="space-y-2">
+                                <!-- Rendered dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- AI Data Limitations -->
+                        <div id="rpt-ai-limitations" class="space-y-1 text-[11px] text-on-surface-variant pt-2 border-t border-steel-gray">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Report Footer -->
+                    <div class="text-center text-[10px] text-on-surface-variant py-4 border-t border-steel-gray space-y-1">
+                        <div>CoalGov AI — AI-Powered Underground Mine Safety, Monitoring & Rescue System</div>
+                        <div>Smart India Hackathon 2026 | PS ID 26039 | Team Udbhavak</div>
+                        <div class="text-hazard-yellow font-bold">This report is generated for informational purposes. All recommendations must be verified by certified mine safety officers.</div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+    // ==================== REPORT GENERATION ====================
+
+    async function generateReport() {
+        const initial = document.getElementById('report-initial');
+        const loading = document.getElementById('report-loading');
+        const output = document.getElementById('report-output');
+        const btnExport = document.getElementById('btn-export');
+        const btnGenerate = document.getElementById('btn-generate');
+
+        initial.classList.add('hidden');
+        output.classList.add('hidden');
+        loading.classList.remove('hidden');
+        btnGenerate.disabled = true;
+        btnGenerate.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> GENERATING...';
+
+        try {
+            const res = await fetch('/api/report/generate', { method: 'POST' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const report = await res.json();
+
+            renderReport(report);
+
+            loading.classList.add('hidden');
+            output.classList.remove('hidden');
+            btnExport.classList.remove('hidden');
+        } catch (err) {
+            console.error("Report generation failed:", err);
+            loading.innerHTML = `
+                <span class="material-symbols-outlined text-critical-red text-4xl">error</span>
+                <h3 class="text-sm font-bold text-critical-red uppercase">Report Generation Failed</h3>
+                <p class="text-xs text-on-surface-variant">${err.message}</p>
+                <button onclick="location.reload()" class="mt-2 bg-surface-container-low hover:bg-surface-container-high border border-steel-gray text-on-surface px-4 py-1.5 rounded-sm text-xs">TRY AGAIN</button>
+            `;
+        } finally {
+            btnGenerate.disabled = false;
+            btnGenerate.innerHTML = '<span class="material-symbols-outlined text-sm">auto_awesome</span> <span>REGENERATE</span>';
+        }
+    }
+
+    function renderReport(report) {
+        // --- Meta ---
+        document.getElementById('rpt-station').innerText = report.meta?.station_id || 'STATION-01';
+        document.getElementById('rpt-timestamp').innerText = report.meta?.generated_at || '--';
+
+        // --- Metrics ---
+        const ds = report.data_summary || {};
+        document.getElementById('rpt-cp-count').innerText = ds.checkpoints_active || 0;
+        document.getElementById('rpt-worker-count').innerText = ds.workers_monitored || 0;
+        document.getElementById('rpt-critical-count').innerText = ds.critical_alerts || 0;
+        document.getElementById('rpt-rover-status').innerText = ds.rover_online ? 'ONLINE' : 'OFFLINE';
+
+        // --- AI Overall Status ---
+        const ai = report.ai_analysis || {};
+        const statusBadge = document.getElementById('rpt-status-badge');
+        const status = ai.overall_safety_status || 'INSUFFICIENT_DATA';
+        const statusColors = {
+            'NOMINAL': 'bg-industrial-green/20 text-industrial-green border border-industrial-green/40',
+            'CAUTION': 'bg-hazard-yellow/20 text-hazard-yellow border border-hazard-yellow/40',
+            'WARNING': 'bg-safety-orange/20 text-safety-orange border border-safety-orange/40',
+            'CRITICAL': 'bg-critical-red/20 text-critical-red border border-critical-red/40 animate-pulse',
+            'INSUFFICIENT_DATA': 'bg-surface-container-high text-on-surface-variant border border-steel-gray',
+        };
+        statusBadge.className = `px-4 py-2 rounded-sm text-sm font-bold uppercase tracking-wider ${statusColors[status] || statusColors['INSUFFICIENT_DATA']}`;
+        statusBadge.innerText = status;
+        document.getElementById('rpt-summary').innerText = ai.overall_summary || 'No summary available.';
+
+        // --- AI Source & Confidence ---
+        document.getElementById('rpt-ai-source').innerText = ai.ai_available ? (ai.ai_source || 'Google Gemini') : 'AI Unavailable';
+        document.getElementById('rpt-ai-confidence').innerText = `Confidence: ${ai.ai_confidence || 'N/A'}`;
+
+        // --- Data Availability ---
+        const da = report.data_availability || {};
+        const daEl = document.getElementById('rpt-data-availability');
+        const daItems = [];
+        daItems.push(da.hardware_connected
+            ? '<span class="text-industrial-green">✓ Live hardware telemetry detected.</span>'
+            : '<span class="text-safety-orange">⚠ Live hardware telemetry currently unavailable. Sensors may be disconnected.</span>');
+        daItems.push(da.checkpoints_reporting
+            ? `<span class="text-industrial-green">✓ ${ds.checkpoints_active} checkpoint(s) with historical data available.</span>`
+            : '<span class="text-on-surface-variant">— No checkpoint data available in current session.</span>');
+        daItems.push(da.workers_reporting
+            ? `<span class="text-industrial-green">✓ ${ds.workers_monitored} worker band(s) with biometric data available.</span>`
+            : '<span class="text-on-surface-variant">— No worker biometric data available in current session.</span>');
+        daItems.push(da.rover_connected
+            ? '<span class="text-industrial-green">✓ Recon rover connected and reporting.</span>'
+            : '<span class="text-on-surface-variant">— Recon rover offline / not connected.</span>');
+        daItems.push(da.alerts_present
+            ? `<span class="text-hazard-yellow">⚡ ${ds.total_alerts} alert event(s) in current session buffer.</span>`
+            : '<span class="text-on-surface-variant">— No safety alert events in current session.</span>');
+        daEl.innerHTML = daItems.map(i => `<div class="flex items-start gap-1.5">${i}</div>`).join('');
+
+        // --- Incidents ---
+        const incEl = document.getElementById('rpt-incidents');
+        const alerts = report.alerts || [];
+        if (alerts.length === 0) {
+            incEl.innerHTML = '<div class="text-on-surface-variant text-xs p-3 bg-carbon-black border border-steel-gray rounded-sm">No safety incidents recorded in the current session buffer.</div>';
+        } else {
+            incEl.innerHTML = alerts.map(a => {
+                const isCrit = a.level === 'CRITICAL';
+                const borderC = isCrit ? 'border-l-critical-red' : (a.level === 'WARNING' ? 'border-l-safety-orange' : 'border-l-hazard-yellow');
+                const badgeC = isCrit ? 'text-critical-red bg-critical-red/20' : (a.level === 'WARNING' ? 'text-safety-orange bg-safety-orange/10' : 'text-hazard-yellow bg-hazard-yellow/10');
+                return `<div class="bg-carbon-black border border-steel-gray border-l-4 ${borderC} rounded-sm px-3 py-1.5 text-xs flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="px-1.5 py-0.5 rounded-sm ${badgeC} text-[10px] font-bold">${a.level}</span>
+                        <span class="font-bold text-on-surface">${a.device_id}:</span>
+                        <span class="text-on-surface-variant">${a.message}</span>
+                    </div>
+                    <span class="text-[10px] text-on-surface-variant whitespace-nowrap ml-2">${a.timestamp}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // --- Checkpoints ---
+        const cpEl = document.getElementById('rpt-checkpoints');
+        const cps = report.checkpoints || [];
+        if (cps.length === 0) {
+            cpEl.innerHTML = '<div class="text-on-surface-variant text-xs p-3 bg-carbon-black border border-steel-gray rounded-sm">No checkpoint sensor data available for analysis.</div>';
+        } else {
+            cpEl.innerHTML = cps.map(cp => {
+                const st = cp.history_stats || {};
+                const hasStats = st.data_points > 0;
+                return `<div class="bg-carbon-black border border-steel-gray rounded-sm p-3 space-y-2 text-xs">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-on-surface flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full ${cp.is_online ? 'bg-industrial-green animate-pulse' : 'bg-steel-gray'}"></span>
+                            ${cp.location} (CP-${cp.checkpoint_id})
+                        </span>
+                        <span class="text-[10px] ${cp.is_online ? 'text-industrial-green' : 'text-on-surface-variant'}">${cp.is_online ? 'ONLINE' : 'OFFLINE'}</span>
+                    </div>
+                    ${hasStats ? `
+                    <div class="grid grid-cols-3 md:grid-cols-6 gap-2 text-center text-[10px]">
+                        <div class="bg-surface-container-low p-1.5 rounded-sm border border-steel-gray">
+                            <div class="text-on-surface-variant">MQ5 Avg/Max</div>
+                            <div class="font-bold text-on-surface">${st.mq5_avg} / ${st.mq5_max}</div>
+                        </div>
+                        <div class="bg-surface-container-low p-1.5 rounded-sm border border-steel-gray">
+                            <div class="text-on-surface-variant">MQ7 Avg/Max</div>
+                            <div class="font-bold text-on-surface">${st.mq7_avg} / ${st.mq7_max}</div>
+                        </div>
+                        <div class="bg-surface-container-low p-1.5 rounded-sm border border-steel-gray">
+                            <div class="text-on-surface-variant">MQ135 Avg/Max</div>
+                            <div class="font-bold text-on-surface">${st.mq135_avg} / ${st.mq135_max}</div>
+                        </div>
+                        <div class="bg-surface-container-low p-1.5 rounded-sm border border-steel-gray">
+                            <div class="text-on-surface-variant">Sound Avg/Max</div>
+                            <div class="font-bold text-on-surface">${st.sound_avg} / ${st.sound_max}</div>
+                        </div>
+                        <div class="bg-surface-container-low p-1.5 rounded-sm border border-steel-gray">
+                            <div class="text-on-surface-variant">Temp Avg/Max</div>
+                            <div class="font-bold text-on-surface">${st.temp_avg}°C / ${st.temp_max}°C</div>
+                        </div>
+                        <div class="bg-surface-container-low p-1.5 rounded-sm border border-steel-gray">
+                            <div class="text-on-surface-variant">Motion Events</div>
+                            <div class="font-bold text-on-surface">${st.motion_events}</div>
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-on-surface-variant">${st.data_points} telemetry data points in rolling buffer</div>
+                    ` : '<div class="text-[10px] text-on-surface-variant">No historical telemetry data in buffer.</div>'}
+                </div>`;
+            }).join('');
+        }
+
+        // --- Workers ---
+        const wkEl = document.getElementById('rpt-workers');
+        const workers = report.workers || [];
+        if (workers.length === 0) {
+            wkEl.innerHTML = '<div class="text-on-surface-variant text-xs p-3 bg-carbon-black border border-steel-gray rounded-sm">No worker biometric band data available for analysis.</div>';
+        } else {
+            wkEl.innerHTML = workers.map(w => {
+                const st = w.history_stats || {};
+                const hasStats = st.data_points > 0;
+                return `<div class="bg-carbon-black border border-steel-gray rounded-sm p-3 space-y-2 text-xs">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-on-surface flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm text-industrial-green">engineering</span>
+                            ${w.worker_name} (Band #${w.band_id})
+                        </span>
+                        <span class="text-[10px] ${w.is_online ? 'text-industrial-green' : 'text-on-surface-variant'}">${w.is_online ? 'ONLINE' : 'OFFLINE'}</span>
+                    </div>
+                    ${hasStats ? `
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-[10px]">
+                        <div class="bg-surface-container-low p-1.5 rounded-sm border border-steel-gray">
+                            <div class="text-on-surface-variant">SpO2 Avg / Min</div>
+                            <div class="font-bold ${st.spo2_min < 90 ? 'text-critical-red' : 'text-industrial-green'}">${st.spo2_avg}% / ${st.spo2_min}%</div>
+                        </div>
+                        <div class="bg-surface-container-low p-1.5 rounded-sm border border-steel-gray">
+                            <div class="text-on-surface-variant">Pulse Avg / Max</div>
+                            <div class="font-bold text-on-surface">${st.pulse_avg} / ${st.pulse_max} BPM</div>
+                        </div>
+                        <div class="bg-surface-container-low p-1.5 rounded-sm border border-steel-gray">
+                            <div class="text-on-surface-variant">Battery</div>
+                            <div class="font-bold text-on-surface">${w.current?.battery_pct || 0}%</div>
+                        </div>
+                        <div class="bg-surface-container-low p-1.5 rounded-sm border border-steel-gray">
+                            <div class="text-on-surface-variant">Relay Route</div>
+                            <div class="font-bold text-on-surface">CP-${w.relayed_by} (${w.hops} hop)</div>
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-on-surface-variant">${st.data_points} biometric data points in rolling buffer</div>
+                    ` : '<div class="text-[10px] text-on-surface-variant">No historical biometric data in buffer.</div>'}
+                </div>`;
+            }).join('');
+        }
+
+        // --- AI Observations ---
+        const obsEl = document.getElementById('rpt-observations');
+        const observations = ai.observations || [];
+        if (observations.length === 0) {
+            obsEl.innerHTML = '<div class="text-on-surface-variant text-xs p-2 bg-carbon-black border border-steel-gray rounded-sm">No observations generated.</div>';
+        } else {
+            obsEl.innerHTML = observations.map(o => {
+                const sevColors = { 'LOW': 'text-industrial-green', 'MEDIUM': 'text-hazard-yellow', 'HIGH': 'text-safety-orange', 'CRITICAL': 'text-critical-red' };
+                return `<div class="bg-carbon-black border border-steel-gray rounded-sm px-3 py-2 text-xs flex items-start gap-2">
+                    <span class="material-symbols-outlined text-sm ${sevColors[o.severity] || 'text-on-surface-variant'} mt-0.5">circle</span>
+                    <div class="flex-1">
+                        <div class="text-on-surface">${o.observation}</div>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-[10px] px-1.5 py-0.5 rounded-sm bg-surface-container border border-steel-gray ${sevColors[o.severity] || ''}">${o.severity}</span>
+                            <span class="text-[10px] text-on-surface-variant">${o.category || ''}</span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // --- Risk Patterns ---
+        const riskEl = document.getElementById('rpt-risks');
+        const risks = ai.risk_patterns || [];
+        if (risks.length === 0) {
+            riskEl.innerHTML = '<div class="text-on-surface-variant text-xs p-2 bg-carbon-black border border-steel-gray rounded-sm">No risk patterns detected.</div>';
+        } else {
+            riskEl.innerHTML = risks.map(r => {
+                const sevColors = { 'LOW': 'border-l-industrial-green', 'MEDIUM': 'border-l-hazard-yellow', 'HIGH': 'border-l-safety-orange', 'CRITICAL': 'border-l-critical-red' };
+                return `<div class="bg-carbon-black border border-steel-gray border-l-4 ${sevColors[r.risk_level] || ''} rounded-sm px-3 py-2 text-xs space-y-1">
+                    <div class="font-bold text-on-surface">${r.pattern}</div>
+                    <div class="text-on-surface-variant">Evidence: ${r.evidence}</div>
+                    <span class="text-[10px] text-on-surface-variant">Risk: ${r.risk_level}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // --- Recommendations ---
+        const recEl = document.getElementById('rpt-recommendations');
+        const recs = ai.recommendations || [];
+        if (recs.length === 0) {
+            recEl.innerHTML = '<div class="text-on-surface-variant text-xs p-2 bg-carbon-black border border-steel-gray rounded-sm">No recommendations generated.</div>';
+        } else {
+            recEl.innerHTML = recs.map((r, i) => {
+                const prioColors = { 'LOW': 'text-industrial-green border-industrial-green/30 bg-industrial-green/10', 'MEDIUM': 'text-hazard-yellow border-hazard-yellow/30 bg-hazard-yellow/10', 'HIGH': 'text-safety-orange border-safety-orange/30 bg-safety-orange/10', 'CRITICAL': 'text-critical-red border-critical-red/30 bg-critical-red/10' };
+                return `<div class="bg-carbon-black border border-steel-gray rounded-sm px-3 py-2 text-xs space-y-1">
+                    <div class="flex items-start gap-2">
+                        <span class="text-hazard-yellow font-bold text-sm">${i + 1}.</span>
+                        <div class="flex-1">
+                            <div class="font-bold text-on-surface">${r.action}</div>
+                            <div class="text-on-surface-variant mt-0.5">Reasoning: ${r.reasoning}</div>
+                            <span class="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-sm border ${prioColors[r.priority] || ''}">${r.priority} PRIORITY</span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // --- AI Limitations ---
+        const limEl = document.getElementById('rpt-ai-limitations');
+        const lims = ai.data_limitations || [];
+        if (lims.length > 0) {
+            limEl.innerHTML = '<div class="font-bold text-on-surface-variant uppercase text-[10px] mb-1">AI Analysis Limitations:</div>' +
+                lims.map(l => `<div class="flex items-start gap-1.5"><span class="text-safety-orange">•</span> ${l}</div>`).join('');
+        }
+    }
+    </script>
+</body>
+</html>

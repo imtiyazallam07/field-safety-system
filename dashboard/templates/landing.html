@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html class="dark scroll-smooth" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>CoalGov AI | Smart Mine Safety Pre-Alert System</title>
+    <!-- Tailwind CSS with custom configuration matching CoalGov AI Carbon -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="/static/css/style.css"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "background": "#131314",
+                        "surface": "#131314",
+                        "carbon-black": "#0A0A0B",
+                        "steel-gray": "#2D2E32",
+                        "surface-container-lowest": "#0e0e0f",
+                        "surface-container-low": "#1c1b1c",
+                        "surface-container": "#201f20",
+                        "surface-container-high": "#2a2a2b",
+                        "surface-container-highest": "#353436",
+                        "surface-bright": "#3a393a",
+                        "surface-variant": "#353436",
+                        "surface-dim": "#131314",
+                        "outline": "#9c8f79",
+                        "outline-variant": "#4f4633",
+                        "on-background": "#e5e2e3",
+                        "on-surface": "#e5e2e3",
+                        "on-surface-variant": "#d3c5ac",
+                        "primary": "#ffe1a7",
+                        "primary-container": "#fbbf24",
+                        "primary-fixed": "#ffdf9f",
+                        "primary-fixed-dim": "#f9bd22",
+                        "hazard-yellow": "#FBBF24",
+                        "safety-orange": "#F97316",
+                        "industrial-green": "#22C55E",
+                        "critical-red": "#FF0000",
+                        "error": "#ffb4ab",
+                        "error-container": "#93000a",
+                        "secondary": "#ffb690",
+                        "secondary-container": "#ec6a06",
+                        "tertiary": "#e5e4e9"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "sm": "0.125rem",
+                        "md": "0.25rem",
+                        "lg": "0.375rem",
+                        "xl": "0.5rem"
+                    },
+                    fontFamily: {
+                        "sans": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-carbon-black text-on-surface antialiased selection:bg-hazard-yellow selection:text-carbon-black coal-dust-bg min-h-screen relative overflow-x-hidden font-sans">
+    <div class="coal-dust-overlay"></div>
+
+    <!-- Floating Right-Side Scroll Spy Dots (Desktop) -->
+    <div class="fixed right-4 md:right-8 top-1/2 -translate-y-1/2 z-50 hidden lg:flex flex-col gap-3 font-mono">
+        <a href="#hero" class="nav-dot group relative flex items-center justify-end" data-target="hero">
+            <span class="absolute right-7 px-2 py-1 bg-surface-container border border-steel-gray rounded-sm text-[10px] text-on-surface font-bold uppercase opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">Hero</span>
+            <div class="w-2.5 h-2.5 rounded-full bg-steel-gray border border-steel-gray group-hover:bg-hazard-yellow transition-all duration-300 dot-indicator"></div>
+        </a>
+        <a href="#overview" class="nav-dot group relative flex items-center justify-end" data-target="overview">
+            <span class="absolute right-7 px-2 py-1 bg-surface-container border border-steel-gray rounded-sm text-[10px] text-on-surface font-bold uppercase opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">Overview</span>
+            <div class="w-2.5 h-2.5 rounded-full bg-steel-gray border border-steel-gray group-hover:bg-hazard-yellow transition-all duration-300 dot-indicator"></div>
+        </a>
+        <a href="#technical" class="nav-dot group relative flex items-center justify-end" data-target="technical">
+            <span class="absolute right-7 px-2 py-1 bg-surface-container border border-steel-gray rounded-sm text-[10px] text-on-surface font-bold uppercase opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">Technical</span>
+            <div class="w-2.5 h-2.5 rounded-full bg-steel-gray border border-steel-gray group-hover:bg-hazard-yellow transition-all duration-300 dot-indicator"></div>
+        </a>
+        <a href="#feasibility" class="nav-dot group relative flex items-center justify-end" data-target="feasibility">
+            <span class="absolute right-7 px-2 py-1 bg-surface-container border border-steel-gray rounded-sm text-[10px] text-on-surface font-bold uppercase opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">Feasibility</span>
+            <div class="w-2.5 h-2.5 rounded-full bg-steel-gray border border-steel-gray group-hover:bg-hazard-yellow transition-all duration-300 dot-indicator"></div>
+        </a>
+        <a href="#impact" class="nav-dot group relative flex items-center justify-end" data-target="impact">
+            <span class="absolute right-7 px-2 py-1 bg-surface-container border border-steel-gray rounded-sm text-[10px] text-on-surface font-bold uppercase opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">Impact</span>
+            <div class="w-2.5 h-2.5 rounded-full bg-steel-gray border border-steel-gray group-hover:bg-hazard-yellow transition-all duration-300 dot-indicator"></div>
+        </a>
+        <a href="#references" class="nav-dot group relative flex items-center justify-end" data-target="references">
+            <span class="absolute right-7 px-2 py-1 bg-surface-container border border-steel-gray rounded-sm text-[10px] text-on-surface font-bold uppercase opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">References</span>
+            <div class="w-2.5 h-2.5 rounded-full bg-steel-gray border border-steel-gray group-hover:bg-hazard-yellow transition-all duration-300 dot-indicator"></div>
+        </a>
+    </div>
+
+    <!-- Sticky Top Navigation Bar -->
+    <header class="sticky top-0 z-40 w-full bg-surface-container/90 backdrop-blur border-b-2 border-steel-gray px-4 md:px-8 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-sm bg-gradient-to-br from-hazard-yellow to-safety-orange flex items-center justify-center text-carbon-black font-bold shadow-md shadow-hazard-yellow/20">
+                <span class="material-symbols-outlined text-xl">shield_with_heart</span>
+            </div>
+            <div>
+                <a href="#hero" class="font-bold text-sm md:text-base tracking-wider text-hazard-yellow font-sans block leading-none">COALGOV AI</a>
+                <span class="font-mono text-[10px] text-on-surface-variant tracking-widest uppercase">Smart Mine Safety</span>
+            </div>
+        </div>
+
+        <nav class="hidden md:flex items-center gap-6 font-mono text-xs text-on-surface-variant">
+            <a href="#overview" class="hover:text-hazard-yellow transition-colors">OVERVIEW</a>
+            <a href="#technical" class="hover:text-hazard-yellow transition-colors">TECHNICAL</a>
+            <a href="#feasibility" class="hover:text-hazard-yellow transition-colors">FEASIBILITY</a>
+            <a href="#impact" class="hover:text-hazard-yellow transition-colors">IMPACT</a>
+            <a href="#references" class="hover:text-hazard-yellow transition-colors">REFERENCES</a>
+        </nav>
+
+        <div class="flex items-center gap-3">
+            <a href="/dashboard" class="flex items-center gap-2 bg-hazard-yellow hover:bg-primary-fixed text-carbon-black font-mono font-bold text-xs px-3.5 py-2 rounded-sm transition-all shadow-md shadow-hazard-yellow/10">
+                <span class="material-symbols-outlined text-sm">dashboard</span>
+                <span>COMMAND CENTER</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-6xl mx-auto px-4 md:px-8 space-y-28 py-12">
+
+        <!-- ================= SECTION 1: HERO ================= -->
+        <section id="hero" class="relative min-h-[85vh] flex flex-col justify-center items-center text-center py-12">
+            <!-- Ambient Glow -->
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-hazard-yellow/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+            <div class="relative z-10 max-w-4xl mx-auto flex flex-col items-center">
+                <!-- Hackathon Badge -->
+                <div class="flex items-center gap-2 px-4 py-1.5 industrial-panel rounded-full border border-steel-gray mb-6 shadow-lg">
+                    <span class="material-symbols-outlined text-hazard-yellow text-base">emoji_events</span>
+                    <span class="font-mono text-xs text-on-surface font-bold tracking-wide uppercase">Smart India Hackathon 2026</span>
+                </div>
+
+                <!-- Problem Statement Metadata Strip -->
+                <div class="flex flex-wrap justify-center gap-2.5 text-xs font-mono mb-6">
+                    <span class="px-3 py-1 bg-surface-container-low border border-steel-gray rounded-sm text-hazard-yellow font-bold">PS ID: 26039</span>
+                    <span class="px-3 py-1 bg-surface-container-low border border-steel-gray rounded-sm text-on-surface-variant">THEME: SMART AUTOMATION</span>
+                    <span class="px-3 py-1 bg-surface-container-low border border-steel-gray rounded-sm text-industrial-green font-bold">CATEGORY: HARDWARE</span>
+                </div>
+
+                <!-- Problem Statement Title -->
+                <p class="text-sm md:text-base font-mono text-on-surface-variant mb-3 max-w-2xl uppercase tracking-wider">
+                    AI-Powered Underground Mine Safety, Monitoring and Rescue System
+                </p>
+
+                <!-- Project Main Title -->
+                <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-on-surface tracking-tight mb-6 leading-tight font-sans">
+                    Smart Mine Safety <br class="hidden sm:inline"/>
+                    <span class="text-hazard-yellow bg-clip-text">Pre-Alert System</span>
+                </h1>
+
+                <!-- Team Name Subtitle -->
+                <p class="text-base sm:text-lg font-mono text-on-surface-variant mb-10 flex items-center gap-2">
+                    <span>DEVELOPED BY</span>
+                    <strong class="text-hazard-yellow bg-surface-container px-2.5 py-0.5 rounded-sm border border-steel-gray">TEAM UDBHAVAK</strong>
+                </p>
+
+                <!-- Action CTA Buttons -->
+                <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto font-mono text-xs">
+                    <a href="/dashboard" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-hazard-yellow hover:bg-primary-fixed text-carbon-black font-bold px-6 py-3.5 rounded-sm transition-all shadow-lg shadow-hazard-yellow/20 active:scale-95">
+                        <span class="material-symbols-outlined text-base">dashboard</span>
+                        <span>ENTER COMMAND CENTER</span>
+                    </a>
+                    <a href="#technical" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-surface-container hover:bg-surface-container-high border border-steel-gray text-on-surface px-6 py-3.5 rounded-sm transition-all active:scale-95">
+                        <span class="material-symbols-outlined text-base text-hazard-yellow">hub</span>
+                        <span>EXPLORE ARCHITECTURE</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Scroll Indicator -->
+            <div class="mt-16 flex flex-col items-center gap-1 font-mono text-[11px] text-on-surface-variant animate-bounce">
+                <span class="tracking-widest uppercase">Scroll to explore</span>
+                <span class="material-symbols-outlined text-hazard-yellow text-lg">expand_more</span>
+            </div>
+        </section>
+
+
+        <!-- ================= SECTION 2: IDEA OVERVIEW ================= -->
+        <section id="overview" class="space-y-10 pt-12 border-t border-steel-gray">
+            <div class="text-center md:text-left space-y-2">
+                <div class="flex items-center justify-center md:justify-start gap-2">
+                    <div class="w-1.5 h-4 bg-hazard-yellow"></div>
+                    <span class="font-mono text-xs text-hazard-yellow uppercase tracking-widest font-bold">System Concept</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-on-surface font-sans">What We're Building</h2>
+                <p class="text-sm font-mono text-on-surface-variant max-w-2xl">
+                    A multi-tier connected ecosystem providing real-time biometric tracking, hazardous gas detection, and autonomous rover teleoperation.
+                </p>
+            </div>
+
+            <!-- 4 Core Feature Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Card 1 -->
+                <div class="industrial-panel border-2 border-steel-gray rounded-sm p-6 relative overflow-hidden flex flex-col justify-between group hover:border-hazard-yellow transition-colors">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-sm bg-industrial-green/10 border border-industrial-green/30 flex items-center justify-center text-industrial-green shrink-0">
+                            <span class="material-symbols-outlined text-xl">monitor_heart</span>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-xs font-bold text-hazard-yellow">[01]</span>
+                                <h3 class="font-bold text-base text-on-surface">Wearable Safety Band</h3>
+                            </div>
+                            <p class="font-mono text-xs text-on-surface-variant leading-relaxed">
+                                Continuously monitors worker Blood Oxygen (SpO₂) and pulse rate via MAX30100 oximetry; transmits biometric telemetry to the nearest checkpoint over ESP-NOW.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="industrial-panel border-2 border-steel-gray rounded-sm p-6 relative overflow-hidden flex flex-col justify-between group hover:border-hazard-yellow transition-colors">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-sm bg-safety-orange/10 border border-safety-orange/30 flex items-center justify-center text-safety-orange shrink-0">
+                            <span class="material-symbols-outlined text-xl">sensors</span>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-xs font-bold text-hazard-yellow">[02]</span>
+                                <h3 class="font-bold text-base text-on-surface">Smart Checkpoint Box</h3>
+                            </div>
+                            <p class="font-mono text-xs text-on-surface-variant leading-relaxed">
+                                Fixed junction units deployed throughout tunnels monitoring combustible gases (MQ5), CO (MQ7), toxic air (MQ135), temperature & humidity (DHT11), PIR motion (HW-416-B), and acoustic spikes (HW-484).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="industrial-panel border-2 border-steel-gray rounded-sm p-6 relative overflow-hidden flex flex-col justify-between group hover:border-hazard-yellow transition-colors">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-sm bg-critical-red/10 border border-critical-red/30 flex items-center justify-center text-critical-red shrink-0">
+                            <span class="material-symbols-outlined text-xl">notifications_active</span>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-xs font-bold text-hazard-yellow">[03]</span>
+                                <h3 class="font-bold text-base text-on-surface">Early Pre-Alert Information</h3>
+                            </div>
+                            <p class="font-mono text-xs text-on-surface-variant leading-relaxed">
+                                Automatically detects threshold breaches in vitals or gas levels, alerting the surface command station before catastrophic incidents escalate.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="industrial-panel border-2 border-steel-gray rounded-sm p-6 relative overflow-hidden flex flex-col justify-between group hover:border-hazard-yellow transition-colors">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-sm bg-hazard-yellow/10 border border-hazard-yellow/30 flex items-center justify-center text-hazard-yellow shrink-0">
+                            <span class="material-symbols-outlined text-xl">smart_toy</span>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-xs font-bold text-hazard-yellow">[04]</span>
+                                <h3 class="font-bold text-base text-on-surface">Rescue Support Rover</h3>
+                            </div>
+                            <p class="font-mono text-xs text-on-surface-variant leading-relaxed">
+                                Reconnaissance rover deployed into hazardous or collapsed tunnels with live OV2640 optical visual transmission and sub-millisecond teleoperation steering.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Communication Path Interactive Pipeline -->
+            <div class="industrial-panel rounded-sm p-6 space-y-6 font-mono">
+                <div class="flex items-center justify-between border-b border-steel-gray pb-3">
+                    <span class="font-bold text-xs uppercase tracking-wider text-on-surface flex items-center gap-2">
+                        <span class="material-symbols-outlined text-hazard-yellow text-base">route</span>
+                        Autonomous Communication Chain
+                    </span>
+                    <span class="text-[10px] text-industrial-green font-bold bg-industrial-green/10 border border-industrial-green/30 px-2 py-0.5 rounded-sm">FAILOVER ENABLED</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-center text-xs">
+                    <div class="bg-carbon-black border border-steel-gray p-3 rounded-sm flex flex-col items-center justify-center">
+                        <span class="material-symbols-outlined text-industrial-green text-xl mb-1">watch</span>
+                        <span class="font-bold text-on-surface">Band / Rover</span>
+                        <span class="text-[10px] text-on-surface-variant">Sensor Ingestion</span>
+                    </div>
+
+                    <div class="bg-carbon-black border border-steel-gray p-3 rounded-sm flex flex-col items-center justify-center">
+                        <span class="material-symbols-outlined text-hazard-yellow text-xl mb-1">cell_tower</span>
+                        <span class="font-bold text-on-surface">Nearest Checkpoint</span>
+                        <span class="text-[10px] text-on-surface-variant">ESP-NOW Link</span>
+                    </div>
+
+                    <div class="bg-carbon-black border border-steel-gray p-3 rounded-sm flex flex-col items-center justify-center">
+                        <span class="material-symbols-outlined text-safety-orange text-xl mb-1">alt_route</span>
+                        <span class="font-bold text-on-surface">Mesh Hop Relay</span>
+                        <span class="text-[10px] text-on-surface-variant">Autonomous Forwarding</span>
+                    </div>
+
+                    <div class="bg-carbon-black border border-steel-gray p-3 rounded-sm flex flex-col items-center justify-center">
+                        <span class="material-symbols-outlined text-hazard-yellow text-xl mb-1">wifi</span>
+                        <span class="font-bold text-on-surface">Station Wi-Fi</span>
+                        <span class="text-[10px] text-on-surface-variant">Hotspot Gateway</span>
+                    </div>
+
+                    <div class="bg-carbon-black border-2 border-hazard-yellow p-3 rounded-sm flex flex-col items-center justify-center bg-hazard-yellow/5">
+                        <span class="material-symbols-outlined text-hazard-yellow text-xl mb-1">dns</span>
+                        <span class="font-bold text-hazard-yellow">Monitoring Station</span>
+                        <span class="text-[10px] text-on-surface-variant">Dashboard & Decision</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= SECTION 3: TECHNICAL APPROACH ================= -->
+        <section id="technical" class="space-y-12 pt-12 border-t border-steel-gray">
+            <div class="text-center md:text-left space-y-2">
+                <div class="flex items-center justify-center md:justify-start gap-2">
+                    <div class="w-1.5 h-4 bg-hazard-yellow"></div>
+                    <span class="font-mono text-xs text-hazard-yellow uppercase tracking-widest font-bold">Architecture & Specs</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-on-surface font-sans">Technical Approach</h2>
+                <p class="text-sm font-mono text-on-surface-variant max-w-2xl">
+                    Hardware pin specifications, distributed mesh networking, and implementation methodology.
+                </p>
+            </div>
+
+            <!-- Technologies Breakdown Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 font-mono text-xs">
+                <!-- Group 1 -->
+                <div class="industrial-panel border border-steel-gray rounded-sm p-5 space-y-3">
+                    <div class="flex items-center gap-2 border-b border-steel-gray pb-2">
+                        <span class="material-symbols-outlined text-industrial-green text-base">watch</span>
+                        <h4 class="font-bold text-on-surface uppercase">Wearable Safety Band</h4>
+                    </div>
+                    <ul class="space-y-2 text-on-surface-variant">
+                        <li class="flex items-center gap-2"><span class="w-1 h-1 bg-hazard-yellow rounded-full"></span> MAX30100 Pulse Oximeter & Heart Rate</li>
+                        <li class="flex items-center gap-2"><span class="w-1 h-1 bg-hazard-yellow rounded-full"></span> ESP32-WROOM Short-Range Unit</li>
+                        <li class="flex items-center gap-2"><span class="w-1 h-1 bg-hazard-yellow rounded-full"></span> 3.7V Li-Ion Power Battery Pack</li>
+                    </ul>
+                </div>
+
+                <!-- Group 2 -->
+                <div class="industrial-panel border border-steel-gray rounded-sm p-5 space-y-3">
+                    <div class="flex items-center gap-2 border-b border-steel-gray pb-2">
+                        <span class="material-symbols-outlined text-safety-orange text-base">sensors</span>
+                        <h4 class="font-bold text-on-surface uppercase">Checkpoint Sensors (ESP32 #4)</h4>
+                    </div>
+                    <ul class="space-y-2 text-on-surface-variant">
+                        <li class="flex items-center gap-2"><span class="w-1 h-1 bg-hazard-yellow rounded-full"></span> MQ5 Combustible Gas (GPIO 33)</li>
+                        <li class="flex items-center gap-2"><span class="w-1 h-1 bg-hazard-yellow rounded-full"></span> MQ7 Carbon Monoxide (GPIO 34)</li>
+                        <li class="flex items-center gap-2"><span class="w-1 h-1 bg-hazard-yellow rounded-full"></span> MQ135 Air Quality (GPIO 35)</li>
+                        <li class="flex items-center gap-2"><span class="w-1 h-1 bg-hazard-yellow rounded-full"></span> HW-416-B PIR Motion (GPIO 26)</li>
+                        <li class="flex items-center gap-2"><span class="w-1 h-1 bg-hazard-yellow rounded-full"></span> HW-484 Sound Spike (GPIO 27)</li>
+                        <li class="flex items-center gap-2"><span class="w-1 h-1 bg-hazard-yellow rounded-full"></span> DHT11 Temp & Humidity (GPIO 15)</li>
+                    </ul>
+                </div>
+
+                <!-- Group 3 -->
+                <div class="industrial-panel border border-steel-gray rounded-sm p-5 space-y-3">
+                    <div class="flex items-center gap-2 border-b border-steel-gray pb-2">
+                        <span class="material-symbols-outlined text-hazard-yellow text-base">smart_toy</span>
+                        <h4 class="font-bold text-on-surface uppercase">Recon Rover Platform</h4>
+                    </div>
+                    <ul class="space-y-2 text-on-surface-variant">
+                        <li class="flex items-center gap-2"><span class="w-1 h-1 bg-hazard-yellow rounded-full"></span> ESP32-CAM (OV2640 5 FPS Stream)</li>
+                        <li class="flex items-center gap-2"><span class="w-1 h-1 bg-hazard-yellow rounded-full"></span> L298N / Dual H-Bridge Motor Driver</li>
+                        <li class="flex items-center gap-2"><span class="w-1 h-1 bg-hazard-yellow rounded-full"></span> Sub-millisecond UDP Broadcast Steering</li>
+                        <li class="flex items-center gap-2"><span class="w-1 h-1 bg-hazard-yellow rounded-full"></span> Failsafe 2.0s Auto-Stop Timeout</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- System Architecture Diagram -->
+            <div class="industrial-panel border-2 border-steel-gray rounded-sm p-6 space-y-6 font-mono">
+                <div class="flex items-center justify-between border-b border-steel-gray pb-3">
+                    <h3 class="font-bold text-sm text-on-surface uppercase flex items-center gap-2">
+                        <span class="material-symbols-outlined text-hazard-yellow text-base">schema</span>
+                        System Architecture & Data Routing
+                    </h3>
+                    <span class="text-[10px] text-on-surface-variant">UNDERGROUND TO SURFACE LINK</span>
+                </div>
+
+                <!-- Visual Node Matrix -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+                    <!-- Layer 1 -->
+                    <div class="space-y-3 bg-carbon-black p-4 border border-steel-gray rounded-sm">
+                        <div class="text-[10px] text-hazard-yellow font-bold uppercase tracking-wider">1. SENSING NODES</div>
+                        <div class="p-3 bg-surface-container rounded-sm border border-steel-gray">
+                            <strong>Wearable Band (Worker #1)</strong>
+                            <div class="text-[10px] text-on-surface-variant">MAX30100 Biometrics</div>
+                        </div>
+                        <div class="p-3 bg-surface-container rounded-sm border border-steel-gray">
+                            <strong>Recon Rover #1</strong>
+                            <div class="text-[10px] text-on-surface-variant">OV2640 Video + Driver</div>
+                        </div>
+                    </div>
+
+                    <!-- Layer 2 -->
+                    <div class="space-y-3 bg-carbon-black p-4 border border-steel-gray rounded-sm">
+                        <div class="text-[10px] text-safety-orange font-bold uppercase tracking-wider">2. MESH RELAYS (ESP-NOW)</div>
+                        <div class="p-3 bg-surface-container rounded-sm border border-steel-gray">
+                            <strong>Checkpoint 1 (Zone-A)</strong>
+                            <div class="text-[10px] text-on-surface-variant">MQ5, MQ7, MQ135, PIR, Sound, DHT11</div>
+                        </div>
+                        <div class="p-3 bg-surface-container rounded-sm border border-steel-gray">
+                            <strong>Checkpoint Relay Hops</strong>
+                            <div class="text-[10px] text-on-surface-variant">Autonomous Multi-Hop Forwarding</div>
+                        </div>
+                    </div>
+
+                    <!-- Layer 3 -->
+                    <div class="space-y-3 bg-carbon-black p-4 border border-steel-gray rounded-sm">
+                        <div class="text-[10px] text-industrial-green font-bold uppercase tracking-wider">3. SURFACE STATION</div>
+                        <div class="p-3 bg-surface-container rounded-sm border border-industrial-green/50">
+                            <strong class="text-industrial-green">Central Monitoring Station</strong>
+                            <div class="text-[10px] text-on-surface-variant">Flask REST + Matplotlib + UDP Broadcast</div>
+                        </div>
+                        <div class="p-3 bg-surface-container rounded-sm border border-steel-gray">
+                            <strong>Rescue Team HUD Console</strong>
+                            <div class="text-[10px] text-on-surface-variant">Incident Response & Teleoperation</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8-Step Implementation Methodology -->
+            <div class="space-y-4 font-mono">
+                <h3 class="font-bold text-sm text-on-surface uppercase flex items-center gap-2">
+                    <span class="material-symbols-outlined text-hazard-yellow text-base">format_list_numbered</span>
+                    Implementation Methodology
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    <div class="bg-carbon-black border border-steel-gray p-3.5 rounded-sm space-y-1">
+                        <span class="text-hazard-yellow font-bold text-sm">01</span>
+                        <h4 class="font-bold text-on-surface">Sensing</h4>
+                        <p class="text-[11px] text-on-surface-variant">Safety band and checkpoint sensors collect live environmental parameters.</p>
+                    </div>
+
+                    <div class="bg-carbon-black border border-steel-gray p-3.5 rounded-sm space-y-1">
+                        <span class="text-hazard-yellow font-bold text-sm">02</span>
+                        <h4 class="font-bold text-on-surface">Collection</h4>
+                        <p class="text-[11px] text-on-surface-variant">Local ESP32 processors aggregate and package analog/digital inputs.</p>
+                    </div>
+
+                    <div class="bg-carbon-black border border-steel-gray p-3.5 rounded-sm space-y-1">
+                        <span class="text-hazard-yellow font-bold text-sm">03</span>
+                        <h4 class="font-bold text-on-surface">ESP-NOW</h4>
+                        <p class="text-[11px] text-on-surface-variant">Direct peer-to-peer radio broadcast to the nearest checkpoint node.</p>
+                    </div>
+
+                    <div class="bg-carbon-black border border-steel-gray p-3.5 rounded-sm space-y-1">
+                        <span class="text-hazard-yellow font-bold text-sm">04</span>
+                        <h4 class="font-bold text-on-surface">Mesh Relay</h4>
+                        <p class="text-[11px] text-on-surface-variant">Multi-hop forwarding across checkpoints if outside direct station range.</p>
+                    </div>
+
+                    <div class="bg-carbon-black border border-steel-gray p-3.5 rounded-sm space-y-1">
+                        <span class="text-hazard-yellow font-bold text-sm">05</span>
+                        <h4 class="font-bold text-on-surface">Wi-Fi Gateway</h4>
+                        <p class="text-[11px] text-on-surface-variant">Gateway checkpoint pushes JSON payload to Central Station HTTP REST.</p>
+                    </div>
+
+                    <div class="bg-carbon-black border border-steel-gray p-3.5 rounded-sm space-y-1">
+                        <span class="text-hazard-yellow font-bold text-sm">06</span>
+                        <h4 class="font-bold text-on-surface">Station Processing</h4>
+                        <p class="text-[11px] text-on-surface-variant">Rolling telemetry queues update trend graphs and evaluate safety limits.</p>
+                    </div>
+
+                    <div class="bg-carbon-black border border-steel-gray p-3.5 rounded-sm space-y-1">
+                        <span class="text-hazard-yellow font-bold text-sm">07</span>
+                        <h4 class="font-bold text-on-surface">Alert & Action</h4>
+                        <p class="text-[11px] text-on-surface-variant">Immediate audio-visual alert streams triggered upon threshold breaches.</p>
+                    </div>
+
+                    <div class="bg-carbon-black border border-steel-gray p-3.5 rounded-sm space-y-1">
+                        <span class="text-hazard-yellow font-bold text-sm">08</span>
+                        <h4 class="font-bold text-on-surface">Rover Deployment</h4>
+                        <p class="text-[11px] text-on-surface-variant">Live optical teleoperation deployed for zero-risk pre-rescue inspection.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= SECTION 4: FEASIBILITY & VIABILITY ================= -->
+        <section id="feasibility" class="space-y-10 pt-12 border-t border-steel-gray">
+            <div class="text-center md:text-left space-y-2">
+                <div class="flex items-center justify-center md:justify-start gap-2">
+                    <div class="w-1.5 h-4 bg-hazard-yellow"></div>
+                    <span class="font-mono text-xs text-hazard-yellow uppercase tracking-widest font-bold">Practicality & Costs</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-on-surface font-sans">Feasibility & Viability</h2>
+                <p class="text-sm font-mono text-on-surface-variant max-w-2xl">
+                    Cost-effective components, modular assembly, and deployment readiness for underground coal mines.
+                </p>
+            </div>
+
+            <!-- Checklists Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 font-mono text-xs">
+                <!-- Checklist 1 -->
+                <div class="industrial-panel border border-steel-gray rounded-sm p-6 space-y-4">
+                    <h3 class="font-bold text-sm text-on-surface uppercase flex items-center gap-2">
+                        <span class="material-symbols-outlined text-industrial-green text-base">check_circle</span>
+                        Hardware Feasibility
+                    </h3>
+                    <ul class="space-y-3 text-on-surface-variant">
+                        <li class="flex items-start gap-2.5">
+                            <span class="material-symbols-outlined text-industrial-green text-sm shrink-0">done</span>
+                            <span>Readily available industrial gas & biometric sensors (MQ-series, MAX30100, DHT11).</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="material-symbols-outlined text-industrial-green text-sm shrink-0">done</span>
+                            <span>Low-power dual-core ESP32 microcontrollers with integrated Wi-Fi and ESP-NOW radio.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="material-symbols-outlined text-industrial-green text-sm shrink-0">done</span>
+                            <span>Modular checkpoint junction box design with soldered pin stability.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="material-symbols-outlined text-industrial-green text-sm shrink-0">done</span>
+                            <span>Standard PC-based central monitoring station with zero specialized hardware requirements.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Checklist 2 -->
+                <div class="industrial-panel border border-steel-gray rounded-sm p-6 space-y-4">
+                    <h3 class="font-bold text-sm text-on-surface uppercase flex items-center gap-2">
+                        <span class="material-symbols-outlined text-industrial-green text-base">check_circle</span>
+                        Deployment Feasibility
+                    </h3>
+                    <ul class="space-y-3 text-on-surface-variant">
+                        <li class="flex items-start gap-2.5">
+                            <span class="material-symbols-outlined text-industrial-green text-sm shrink-0">done</span>
+                            <span>Rapid deployment of multiple checkpoints across active tunnel extraction zones.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="material-symbols-outlined text-industrial-green text-sm shrink-0">done</span>
+                            <span>Lightweight wearable safety band worn on miners' wrists throughout work shifts.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="material-symbols-outlined text-industrial-green text-sm shrink-0">done</span>
+                            <span>Remote visual inspection via rover avoiding hazardous human entry.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="material-symbols-outlined text-industrial-green text-sm shrink-0">done</span>
+                            <span>Checkpoint-to-checkpoint mesh relaying without needing extensive underground cabling.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Cost Feasibility Table -->
+            <div class="industrial-panel border-2 border-steel-gray rounded-sm overflow-hidden font-mono text-xs">
+                <div class="industrial-panel-header px-4 py-3 font-bold text-on-surface uppercase tracking-wider flex items-center gap-2">
+                    <span class="material-symbols-outlined text-hazard-yellow text-base">attach_money</span>
+                    Cost & Constraint Optimization Matrix
+                </div>
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-carbon-black border-b border-steel-gray text-on-surface-variant text-[11px]">
+                            <th class="p-3.5 font-bold uppercase w-1/2">Challenge / Underground Constraint</th>
+                            <th class="p-3.5 font-bold uppercase w-1/2 text-hazard-yellow">Low-Cost Optimized Solution</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-steel-gray">
+                        <tr class="hover:bg-surface-container-high transition-colors">
+                            <td class="p-3.5 text-on-surface">Underground network cabling limitations</td>
+                            <td class="p-3.5 text-hazard-yellow font-semibold">ESP-NOW wireless mesh relay between checkpoints</td>
+                        </tr>
+                        <tr class="hover:bg-surface-container-high transition-colors">
+                            <td class="p-3.5 text-on-surface">Wi-Fi unavailable across deep shafts</td>
+                            <td class="p-3.5 text-hazard-yellow font-semibold">Only the station gateway checkpoint requires Wi-Fi connectivity</td>
+                        </tr>
+                        <tr class="hover:bg-surface-container-high transition-colors">
+                            <td class="p-3.5 text-on-surface">Flammable / toxic gas accumulation</td>
+                            <td class="p-3.5 text-hazard-yellow font-semibold">Cost-effective MQ5, MQ7, and MQ135 multi-gas sensing suite</td>
+                        </tr>
+                        <tr class="hover:bg-surface-container-high transition-colors">
+                            <td class="p-3.5 text-on-surface">Sudden structural collapse or explosion sound</td>
+                            <td class="p-3.5 text-hazard-yellow font-semibold">HW-484 acoustic sound spike monitoring</td>
+                        </tr>
+                        <tr class="hover:bg-surface-container-high transition-colors">
+                            <td class="p-3.5 text-on-surface">Worker hypoxia / biometric emergencies</td>
+                            <td class="p-3.5 text-hazard-yellow font-semibold">MAX30100 optical pulse oximetry wearable bands</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Challenges & Enhancements Pairs -->
+            <div class="space-y-3 font-mono text-xs">
+                <h3 class="font-bold text-sm text-on-surface uppercase flex items-center gap-2">
+                    <span class="material-symbols-outlined text-hazard-yellow text-base">troubleshoot</span>
+                    Identified Challenges & Future Enhancements
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="industrial-panel border border-steel-gray p-4 rounded-sm space-y-2">
+                        <span class="text-[10px] text-critical-red font-bold uppercase tracking-wider flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs">warning</span> Challenge: Optical Visibility
+                        </span>
+                        <p class="text-on-surface-variant text-[11px]">Normal camera feed visibility may degrade in heavy smoke or coal dust haze.</p>
+                        <div class="pt-2 border-t border-steel-gray text-hazard-yellow text-[11px]">
+                            <strong>Future Enhancement:</strong> Integrate lightweight thermal infrared camera modules for worker heat signature detection.
+                        </div>
+                    </div>
+
+                    <div class="industrial-panel border border-steel-gray p-4 rounded-sm space-y-2">
+                        <span class="text-[10px] text-safety-orange font-bold uppercase tracking-wider flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs">wifi_off</span> Challenge: Deep Distance
+                        </span>
+                        <p class="text-on-surface-variant text-[11px]">Very deep mines exceeding standard radio distances.</p>
+                        <div class="pt-2 border-t border-steel-gray text-hazard-yellow text-[11px]">
+                            <strong>Future Enhancement:</strong> Sub-GHz LoRa relay repeaters for multi-kilometer subterranean data transmission.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= SECTION 5: IMPACT & BENEFITS ================= -->
+        <section id="impact" class="space-y-10 pt-12 border-t border-steel-gray">
+            <div class="text-center md:text-left space-y-2">
+                <div class="flex items-center justify-center md:justify-start gap-2">
+                    <div class="w-1.5 h-4 bg-hazard-yellow"></div>
+                    <span class="font-mono text-xs text-hazard-yellow uppercase tracking-widest font-bold">Value Proposition</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-on-surface font-sans">Impact & Benefits</h2>
+                <p class="text-sm font-mono text-on-surface-variant max-w-2xl">
+                    Protecting human lives, preventing catastrophic industrial downtime, and improving underground working environments.
+                </p>
+            </div>
+
+            <!-- 4 Headline Metrics -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
+                <div class="bg-carbon-black border border-steel-gray p-4 rounded-sm space-y-2">
+                    <h4 class="font-bold text-hazard-yellow uppercase">Worker Health</h4>
+                    <p class="text-[11px] text-on-surface-variant leading-relaxed">Continuous miner biometric monitoring prevents severe hypoxia and medical distress.</p>
+                </div>
+                <div class="bg-carbon-black border border-steel-gray p-4 rounded-sm space-y-2">
+                    <h4 class="font-bold text-industrial-green uppercase">Mine Awareness</h4>
+                    <p class="text-[11px] text-on-surface-variant leading-relaxed">Early combustible and toxic gas detection allows proactive ventilation and evacuation.</p>
+                </div>
+                <div class="bg-carbon-black border border-steel-gray p-4 rounded-sm space-y-2">
+                    <h4 class="font-bold text-safety-orange uppercase">Informed Rescue</h4>
+                    <p class="text-[11px] text-on-surface-variant leading-relaxed">Surface teams receive exact telemetry before entering hazardous tunnel sectors.</p>
+                </div>
+                <div class="bg-carbon-black border border-steel-gray p-4 rounded-sm space-y-2">
+                    <h4 class="font-bold text-primary uppercase">Rover Support</h4>
+                    <p class="text-[11px] text-on-surface-variant leading-relaxed">Remote optical exploration keeps human rescuers safe from unknown subterranean hazards.</p>
+                </div>
+            </div>
+
+            <!-- 3 Column Impact (Social, Economic, Environmental) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 font-mono text-xs">
+                <!-- Social -->
+                <div class="industrial-panel border-2 border-steel-gray rounded-sm p-6 space-y-3">
+                    <div class="flex items-center gap-2 text-hazard-yellow border-b border-steel-gray pb-2">
+                        <span class="material-symbols-outlined text-xl">groups</span>
+                        <h3 class="font-bold text-sm text-on-surface uppercase">Social Impact</h3>
+                    </div>
+                    <ul class="space-y-2 text-on-surface-variant">
+                        <li class="flex items-start gap-2"><span class="text-hazard-yellow font-bold">•</span> Drastic reduction in miner injuries and fatalities through early automated warnings.</li>
+                        <li class="flex items-start gap-2"><span class="text-hazard-yellow font-bold">•</span> Protects rescue personnel from blind entry into toxic or unstable collapsed shafts.</li>
+                    </ul>
+                </div>
+
+                <!-- Economic -->
+                <div class="industrial-panel border-2 border-steel-gray rounded-sm p-6 space-y-3">
+                    <div class="flex items-center gap-2 text-industrial-green border-b border-steel-gray pb-2">
+                        <span class="material-symbols-outlined text-xl">trending_down</span>
+                        <h3 class="font-bold text-sm text-on-surface uppercase">Economic Impact</h3>
+                    </div>
+                    <ul class="space-y-2 text-on-surface-variant">
+                        <li class="flex items-start gap-2"><span class="text-industrial-green font-bold">•</span> Prevents multimillion-dollar mine downtime and severe equipment loss.</li>
+                        <li class="flex items-start gap-2"><span class="text-industrial-green font-bold">•</span> Eliminates recurring cabling maintenance costs using wireless mesh relays.</li>
+                    </ul>
+                </div>
+
+                <!-- Environmental -->
+                <div class="industrial-panel border-2 border-steel-gray rounded-sm p-6 space-y-3">
+                    <div class="flex items-center gap-2 text-safety-orange border-b border-steel-gray pb-2">
+                        <span class="material-symbols-outlined text-xl">eco</span>
+                        <h3 class="font-bold text-sm text-on-surface uppercase">Environmental Impact</h3>
+                    </div>
+                    <ul class="space-y-2 text-on-surface-variant">
+                        <li class="flex items-start gap-2"><span class="text-safety-orange font-bold">•</span> Identifies toxic chemical vapors and gas leaks early, avoiding underground contamination.</li>
+                        <li class="flex items-start gap-2"><span class="text-safety-orange font-bold">•</span> Optimizes active ventilation fan operation based on real ambient sensor data.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Overall Statement Banner -->
+            <div class="industrial-panel border-2 border-hazard-yellow rounded-sm p-8 text-center space-y-3 relative overflow-hidden bg-hazard-yellow/5">
+                <span class="material-symbols-outlined text-hazard-yellow text-3xl">format_quote</span>
+                <p class="text-base sm:text-xl font-bold text-on-surface max-w-3xl mx-auto leading-relaxed font-sans">
+                    "Our solution ensures early detection, rapid decision-making, and safer intervention — leading to a smarter, safer, and more resilient mining environment."
+                </p>
+                <div class="font-mono text-xs text-hazard-yellow font-bold uppercase tracking-widest">— Team Udbhavak • Smart India Hackathon 2026</div>
+            </div>
+        </section>
+
+
+        <!-- ================= SECTION 6: REFERENCES & FOOTER ================= -->
+        <section id="references" class="space-y-12 pt-12 border-t border-steel-gray">
+            <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                    <div class="w-1.5 h-4 bg-hazard-yellow"></div>
+                    <span class="font-mono text-xs text-hazard-yellow uppercase tracking-widest font-bold">Citations</span>
+                </div>
+                <h2 class="text-2xl font-bold text-on-surface font-sans">References & Research</h2>
+            </div>
+
+            <!-- Reference Links Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-xs">
+                <a href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/hw-reference/index.html" target="_blank" rel="noopener noreferrer" class="industrial-panel border border-steel-gray hover:border-hazard-yellow p-4 rounded-sm flex items-center justify-between transition-colors group">
+                    <span class="font-bold text-on-surface group-hover:text-hazard-yellow">ESP32 Hardware Reference Documentation</span>
+                    <span class="material-symbols-outlined text-on-surface-variant group-hover:text-hazard-yellow text-sm">open_in_new</span>
+                </a>
+
+                <a href="https://randomnerdtutorials.com/projects-esp32/" target="_blank" rel="noopener noreferrer" class="industrial-panel border border-steel-gray hover:border-hazard-yellow p-4 rounded-sm flex items-center justify-between transition-colors group">
+                    <span class="font-bold text-on-surface group-hover:text-hazard-yellow">Random Nerd Tutorials — ESP32 Sensor Guides</span>
+                    <span class="material-symbols-outlined text-on-surface-variant group-hover:text-hazard-yellow text-sm">open_in_new</span>
+                </a>
+
+                <a href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/" target="_blank" rel="noopener noreferrer" class="industrial-panel border border-steel-gray hover:border-hazard-yellow p-4 rounded-sm flex items-center justify-between transition-colors group">
+                    <span class="font-bold text-on-surface group-hover:text-hazard-yellow">Espressif ESP-IDF Framework Guides</span>
+                    <span class="material-symbols-outlined text-on-surface-variant group-hover:text-hazard-yellow text-sm">open_in_new</span>
+                </a>
+
+                <a href="https://ieeexplore.ieee.org/document/9573246" target="_blank" rel="noopener noreferrer" class="industrial-panel border border-steel-gray hover:border-hazard-yellow p-4 rounded-sm flex items-center justify-between transition-colors group">
+                    <span class="font-bold text-on-surface group-hover:text-hazard-yellow">IEEE Research: Mine Safety Telemetry Systems</span>
+                    <span class="material-symbols-outlined text-on-surface-variant group-hover:text-hazard-yellow text-sm">open_in_new</span>
+                </a>
+            </div>
+
+            <!-- Big Final Launch Callout -->
+            <div class="bg-carbon-black border-2 border-steel-gray p-8 rounded-sm text-center space-y-4 font-mono">
+                <h3 class="text-xl font-bold text-on-surface uppercase font-sans">Ready to View Real-Time Telemetry?</h3>
+                <p class="text-xs text-on-surface-variant max-w-xl mx-auto">
+                    Access the central command station to monitor live sensors, view Matplotlib hazard graphs, and teleoperate the reconnaissance rover.
+                </p>
+                <a href="/dashboard" class="inline-flex items-center gap-2 bg-hazard-yellow hover:bg-primary-fixed text-carbon-black font-bold text-xs px-8 py-3.5 rounded-sm transition-all shadow-lg shadow-hazard-yellow/20 active:scale-95">
+                    <span class="material-symbols-outlined text-base">dashboard</span>
+                    <span>LAUNCH MONITORING STATION</span>
+                </a>
+            </div>
+
+            <!-- Footer Metadata -->
+            <footer class="pt-8 border-t border-steel-gray text-center font-mono text-[11px] text-on-surface-variant flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <strong class="text-on-surface">TEAM UDBHAVAK</strong>
+                    <span>•</span>
+                    <span>Smart India Hackathon 2026</span>
+                    <span>•</span>
+                    <span>PS #26039</span>
+                </div>
+                <div>CoalGov AI — Field Safety System</div>
+            </footer>
+        </section>
+
+    </main>
+
+    <!-- Scroll Spy & Active Indicator Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const dots = document.querySelectorAll('.nav-dot');
+
+            const onScroll = () => {
+                const scrollPos = window.scrollY + 200;
+                sections.forEach(section => {
+                    const top = section.offsetTop;
+                    const height = section.offsetHeight;
+                    const id = section.getAttribute('id');
+                    if (scrollPos >= top && scrollPos < top + height) {
+                        dots.forEach(dot => {
+                            const indicator = dot.querySelector('.dot-indicator');
+                            if (dot.getAttribute('data-target') === id) {
+                                indicator.classList.remove('bg-steel-gray', 'border-steel-gray');
+                                indicator.classList.add('bg-hazard-yellow', 'border-hazard-yellow', 'scale-125');
+                            } else {
+                                indicator.classList.remove('bg-hazard-yellow', 'border-hazard-yellow', 'scale-125');
+                                indicator.classList.add('bg-steel-gray', 'border-steel-gray');
+                            }
+                        });
+                    }
+                });
+            };
+
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+        });
+    </script>
+</body>
+</html>

@@ -1,27 +1,107 @@
-/* Field Safety Monitoring System Custom Styles */
+/* CoalGov AI - Carbon Theme Custom Styles */
 
-/* Custom Scrollbars */
-.scrollbar-thin::-webkit-scrollbar {
+/* Coal Dust Noise Overlay */
+.coal-dust-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.coal-dust-bg {
+    background-image: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.85) 100%), url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+/* Industrial Scrollbars */
+::-webkit-scrollbar {
     width: 6px;
     height: 6px;
 }
-.scrollbar-thin::-webkit-scrollbar-track {
-    background: #0f172a;
+::-webkit-scrollbar-track {
+    background: #0e0e0f;
+    border-left: 1px solid #2D2E32;
 }
-.scrollbar-thin::-webkit-scrollbar-thumb {
-    background: #334155;
-    border-radius: 3px;
+::-webkit-scrollbar-thumb {
+    background: #2D2E32;
+    border-radius: 2px;
 }
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: #475569;
+::-webkit-scrollbar-thumb:hover {
+    background: #4f4633;
 }
 
-/* Heartbeat pulse animation */
+.scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: #0A0A0B;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #2D2E32;
+    border-radius: 2px;
+}
+
+/* Industrial Panel Styles */
+.industrial-panel {
+    background-color: #201f20;
+    border: 1px solid #2D2E32;
+}
+
+.industrial-panel-header {
+    background: linear-gradient(to bottom, #2D2E32, #201f20);
+    border-bottom: 1px solid #2D2E32;
+}
+
+.brushed-metal {
+    background: linear-gradient(180deg, #2D2E32 0%, #1A1A1B 100%);
+}
+
+.hazard-stripe-left {
+    position: relative;
+}
+.hazard-stripe-left::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: repeating-linear-gradient(
+        45deg,
+        #FBBF24,
+        #FBBF24 8px,
+        #0A0A0B 8px,
+        #0A0A0B 16px
+    );
+}
+
+.hazard-stripe-critical::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: repeating-linear-gradient(
+        45deg,
+        #FF0000,
+        #FF0000 8px,
+        #0A0A0B 8px,
+        #0A0A0B 16px
+    );
+}
+
+/* Heartbeat and Pulse Animations */
 @keyframes heartBeat {
     0% { transform: scale(1); }
-    14% { transform: scale(1.3); }
+    14% { transform: scale(1.25); }
     28% { transform: scale(1); }
-    42% { transform: scale(1.3); }
+    42% { transform: scale(1.25); }
     70% { transform: scale(1); }
 }
 
@@ -29,12 +109,15 @@
     animation: heartBeat 1.3s infinite ease-in-out;
 }
 
-/* Hazard pulse border */
 @keyframes alertGlow {
-    0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
-    50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.8); }
+    0%, 100% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
+    50% { box-shadow: 0 0 25px rgba(255, 0, 0, 0.7); }
 }
 
 .alert-critical-glow {
     animation: alertGlow 1.5s infinite;
+}
+
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
 }

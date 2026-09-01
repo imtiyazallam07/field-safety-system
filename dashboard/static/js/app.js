@@ -1,6 +1,6 @@
 /**
  * Field Safety Monitoring System - Dashboard Application JS
- * Soldered Sensors: MQ5(33), MQ7(34), MQ135(35), HW-416-B PIR(26: true/false), HW-484 Sound(27), DHT11(15)
+ * Dedicated Contextual Operational Pages & Real-Time Telemetry
  */
 
 let audioEnabled = true;
@@ -8,8 +8,85 @@ let audioCtx = null;
 let currentThresholds = {};
 let lastAlertCount = 0;
 let lastRoverOnline = false;
+let currentView = 'overview';
+
+// ================= CONTEXTUAL VIEW & ROUTE SWITCHER =================
+
+const VIEW_CONFIG = {
+    'overview': { title: 'COMMAND CENTER', path: '/dashboard', navId: 'nav-overview' },
+    'incidents': { title: 'INCIDENT STREAM', path: '/incidents', navId: 'nav-incidents' },
+    'workers': { title: 'WORKER VITALS', path: '/workers', navId: 'nav-workers' },
+    'checkpoints': { title: 'CHECKPOINT SUITE', path: '/checkpoints', navId: 'nav-checkpoints' },
+    'charts': { title: 'TREND TELEMETRY', path: '/telemetry', navId: 'nav-charts' },
+    'rover': { title: 'RECON ROVER', path: '/rover', navId: 'nav-rover' },
+    'topology': { title: 'MESH NETWORK', path: '/network', navId: 'nav-topology' }
+};
+
+const PATH_TO_VIEW = {
+    '/dashboard': 'overview',
+    '/station': 'overview',
+    '/incidents': 'incidents',
+    '/workers': 'workers',
+    '/checkpoints': 'checkpoints',
+    '/telemetry': 'charts',
+    '/rover': 'rover',
+    '/network': 'topology'
+};
+
+function handleNavClick(event, viewName, urlPath) {
+    if (event) event.preventDefault();
+    switchView(viewName);
+    if (window.location.pathname !== urlPath) {
+        history.pushState({ view: viewName }, '', urlPath);
+    }
+}
+
+function switchView(viewName) {
+    if (!VIEW_CONFIG[viewName]) viewName = 'overview';
+    currentView = viewName;
+
+    // 1. Hide all operational views and show the selected view
+    document.querySelectorAll('.operational-view').forEach(view => {
+        view.classList.add('hidden');
+    });
+    const targetView = document.getElementById(`view-${viewName}`);
+    if (targetView) {
+        targetView.classList.remove('hidden');
+    }
+
+    // 2. Update navigation item active state styles
+    document.querySelectorAll('.nav-item').forEach(nav => {
+        nav.className = 'nav-item w-full flex items-center gap-3 px-3.5 py-2.5 text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all rounded-sm text-left group';
+    });
+    const activeNavId = VIEW_CONFIG[viewName].navId;
+    const activeNav = document.getElementById(activeNavId);
+    if (activeNav) {
+        activeNav.className = 'nav-item w-full flex items-center gap-3 px-3.5 py-2.5 bg-surface-container-high border-l-4 border-hazard-yellow text-hazard-yellow rounded-r-sm font-bold transition-all text-left group';
+    }
+
+    // 3. Update top app bar header badge
+    const viewBadge = document.getElementById('current-view-badge');
+    if (viewBadge) {
+        viewBadge.innerText = VIEW_CONFIG[viewName].title;
+    }
+
+    // Scroll main body to top
+    const mainEl = document.querySelector('main');
+    if (mainEl) mainEl.scrollTop = 0;
+}
+
+window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.view) {
+        switchView(event.state.view);
+    } else {
+        const path = window.location.pathname;
+        const mappedView = PATH_TO_VIEW[path] || 'overview';
+        switchView(mappedView);
+    }
+});
 
 // ================= AUDIO ALERT SYNTHESIZER =================
+
 function playAlertBeep(level) {
     if (!audioEnabled) return;
     try {
@@ -32,9 +109,8 @@ function playAlertBeep(level) {
             osc.start();
             osc.stop(audioCtx.currentTime + 0.4);
         } else if (level === 'CONNECT') {
-            // Pleasant double chime on connection
-            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.12); // A5
+            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.12);
             gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
             osc.start();
@@ -54,8 +130,8 @@ function playAlertBeep(level) {
 document.getElementById('btn-audio-toggle').addEventListener('click', function () {
     audioEnabled = !audioEnabled;
     this.innerHTML = audioEnabled 
-        ? '<i class="fa-solid fa-volume-high text-cyan-400"></i>'
-        : '<i class="fa-solid fa-volume-xmark text-slate-500"></i>';
+        ? '<span class="material-symbols-outlined text-sm align-middle text-hazard-yellow">volume_up</span>'
+        : '<span class="material-symbols-outlined text-sm align-middle text-on-surface-variant">volume_off</span>';
 });
 
 // ================= DATA POLLING & RENDERING =================
@@ -66,30 +142,30 @@ async function fetchSystemData() {
         if (!res.ok) return;
         const data = await res.json();
 
-        // 1. Update Header
+        // 1. Update Header & KPI Metrics
         document.getElementById('header-cp-count').innerText = data.checkpoints.length;
         document.getElementById('header-band-count').innerText = data.bands.length;
-        document.getElementById('server-clock').innerText = data.server_time.split(' ')[1] || '--:--:--';
+        document.getElementById('server-clock').innerText = (data.server_time && data.server_time.split(' ')[1]) || '--:--:--';
         currentThresholds = data.thresholds || {};
 
-        // Header Rover Status Badge
+        // Rover Status KPI Badge
         const roverStatusHeader = document.getElementById('header-rover-status');
-        if (data.rover.is_online) {
-            roverStatusHeader.innerHTML = `<span class="text-emerald-400"><i class="fa-solid fa-circle text-[8px] animate-pulse mr-1"></i>ONLINE (CP-${data.rover.connected_checkpoint_id || 1})</span>`;
+        if (data.rover && data.rover.is_online) {
+            roverStatusHeader.innerHTML = `<span class="text-industrial-green flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-industrial-green animate-pulse"></span> ONLINE (CP-${data.rover.connected_checkpoint_id || 1})</span>`;
         } else {
-            roverStatusHeader.innerHTML = `<span class="text-slate-400">STOPPED / IDLE</span>`;
+            roverStatusHeader.innerHTML = `<span class="text-on-surface-variant">STOPPED / IDLE</span>`;
         }
 
-        // 2. Render Alerts
+        // 2. Render Alerts Stream (both in dedicated view and overview preview)
         renderAlerts(data.alerts);
 
-        // 3. Render Personnel Vitals
+        // 3. Render Personnel Vitals (both in dedicated view and overview preview)
         renderWorkers(data.bands);
 
-        // 4. Render Checkpoints
+        // 4. Render Checkpoints Grid (both in dedicated view and overview preview)
         renderCheckpoints(data.checkpoints);
 
-        // 5. Render Rover Telemetry & Connection Status
+        // 5. Render Rover Telemetry
         renderRover(data.rover);
 
         // 6. Render Mesh Topology
@@ -102,19 +178,26 @@ async function fetchSystemData() {
 
 function renderAlerts(alertsList) {
     const feed = document.getElementById('alerts-feed');
+    const overviewFeed = document.getElementById('overview-alerts-feed');
     const badge = document.getElementById('alert-badge-count');
+    const navBadge = document.getElementById('nav-alert-badge');
 
     if (!alertsList || alertsList.length === 0) {
-        feed.innerHTML = `
-            <div class="bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-400 flex items-center justify-between">
+        const emptyHtml = `
+            <div class="bg-carbon-black border border-steel-gray rounded-sm px-3 py-2.5 text-xs text-on-surface-variant flex items-center justify-between font-mono">
                 <span class="flex items-center gap-2">
-                    <i class="fa-solid fa-circle-check text-emerald-400"></i>
-                    <span>All site sensors & worker vitals within nominal limits.</span>
+                    <span class="material-symbols-outlined text-industrial-green text-sm">check_circle</span>
+                    <span>All site sensors & worker biometrics nominal. No active safety incidents.</span>
                 </span>
-                <span class="font-mono text-[10px] text-slate-500">Live</span>
+                <span class="text-[10px] text-on-surface-variant">Live</span>
             </div>`;
-        badge.innerText = '0 Active';
-        badge.className = 'bg-slate-800 text-slate-400 text-[10px] px-2 py-0.5 rounded-full';
+        if (feed) feed.innerHTML = emptyHtml;
+        if (overviewFeed) overviewFeed.innerHTML = emptyHtml;
+        if (badge) badge.innerText = '0 Active';
+        if (navBadge) {
+            navBadge.innerText = '0';
+            navBadge.className = 'bg-surface-container text-on-surface-variant border border-steel-gray px-1.5 py-0.2 rounded text-[10px]';
+        }
         lastAlertCount = 0;
         return;
     }
@@ -125,209 +208,245 @@ function renderAlerts(alertsList) {
     }
     lastAlertCount = alertsList.length;
 
-    badge.innerText = `${alertsList.length} Incidents`;
-    badge.className = 'bg-rose-950 text-rose-300 text-[10px] px-2 py-0.5 rounded-full border border-rose-500/40 animate-pulse';
+    if (badge) badge.innerText = `${alertsList.length} Active`;
+    if (navBadge) {
+        navBadge.innerText = `${alertsList.length}`;
+        navBadge.className = 'bg-critical-red/20 text-critical-red border border-critical-red/40 px-1.5 py-0.2 rounded text-[10px] font-bold animate-pulse';
+    }
 
-    feed.innerHTML = alertsList.map(a => {
+    const html = alertsList.map(a => {
         const isCrit = a.level === 'CRITICAL';
         const isInfo = a.level === 'INFO';
-        let bgStyle = 'bg-amber-950/40 border-amber-600/40 text-amber-200';
-        let icon = 'fa-circle-exclamation text-amber-400';
+        
+        let borderClass = 'border-l-4 border-l-safety-orange border-steel-gray';
+        let badgeColor = 'text-safety-orange bg-safety-orange/10 border-safety-orange/30';
+        let icon = 'warning';
+        let iconColor = 'text-safety-orange';
 
         if (isCrit) {
-            bgStyle = 'bg-rose-950/40 border-rose-600/40 text-rose-200';
-            icon = 'fa-triangle-exclamation text-rose-400';
+            borderClass = 'border-l-4 border-l-critical-red border-steel-gray shadow-[0_0_10px_rgba(255,0,0,0.15)]';
+            badgeColor = 'text-critical-red bg-critical-red/20 border-critical-red/40 animate-pulse';
+            icon = 'emergency';
+            iconColor = 'text-critical-red';
         } else if (isInfo) {
-            bgStyle = 'bg-cyan-950/40 border-cyan-600/40 text-cyan-200';
-            icon = 'fa-circle-info text-cyan-400';
+            borderClass = 'border-l-4 border-l-hazard-yellow border-steel-gray';
+            badgeColor = 'text-hazard-yellow bg-hazard-yellow/10 border-hazard-yellow/30';
+            icon = 'info';
+            iconColor = 'text-hazard-yellow';
         }
 
         return `
-            <div class="${bgStyle} border rounded-lg px-3 py-2 text-xs flex items-center justify-between transition-all">
+            <div class="bg-carbon-black border ${borderClass} rounded-sm px-3 py-2 text-xs flex items-center justify-between transition-all font-mono">
                 <div class="flex items-center gap-2.5">
-                    <i class="fa-solid ${icon}"></i>
+                    <span class="material-symbols-outlined ${iconColor} text-base">${icon}</span>
                     <div>
-                        <span class="font-bold mr-1">[${a.category}]</span>
-                        <span class="font-semibold text-slate-300">${a.device_id}:</span>
-                        <span>${a.message}</span>
+                        <span class="px-1.5 py-0.5 rounded-sm border ${badgeColor} text-[10px] font-bold mr-1.5">${a.category.toUpperCase()}</span>
+                        <span class="font-bold text-on-surface">${a.device_id}:</span>
+                        <span class="text-on-surface-variant ml-1">${a.message}</span>
                     </div>
                 </div>
-                <span class="font-mono text-[10px] text-slate-400 ml-2 whitespace-nowrap">${a.timestamp}</span>
+                <span class="text-[10px] text-on-surface-variant ml-3 whitespace-nowrap bg-surface-container-high px-2 py-0.5 rounded-sm border border-steel-gray">${a.timestamp}</span>
             </div>
         `;
     }).join('');
+
+    if (feed) feed.innerHTML = html;
+    if (overviewFeed) overviewFeed.innerHTML = html;
 }
 
 function renderWorkers(bands) {
     const grid = document.getElementById('workers-grid');
+    const overviewGrid = document.getElementById('overview-workers-grid');
+
     if (!bands || bands.length === 0) {
-        grid.innerHTML = `
-            <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5 text-center text-slate-500 text-xs col-span-full">
-                No active worker monitoring bands transmitting.
+        const emptyHtml = `
+            <div class="industrial-panel rounded-sm p-6 text-center text-on-surface-variant font-mono text-xs col-span-full border border-steel-gray">
+                No active worker biometric bands transmitting telemetry. Connect ESP32 Band #1 (MAX30100) to begin real-time ingestion.
             </div>`;
+        if (grid) grid.innerHTML = emptyHtml;
+        if (overviewGrid) overviewGrid.innerHTML = emptyHtml;
         return;
     }
 
-    grid.innerHTML = bands.map(b => {
+    const html = bands.map(b => {
         const isHypoxia = b.spo2 < (currentThresholds.spo2_critical || 90);
         const isWarn = b.spo2 < (currentThresholds.spo2_warning || 94);
         const isTachycardia = b.pulse_bpm > (currentThresholds.pulse_max || 120);
 
-        let statusBadge = `<span class="bg-emerald-950 text-emerald-300 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">NORMAL</span>`;
-        let cardGlow = 'border-slate-800';
+        let statusBadge = `<span class="bg-industrial-green/10 text-industrial-green border border-industrial-green/30 text-[10px] px-2 py-0.5 rounded-sm font-bold font-mono">NOMINAL</span>`;
+        let cardBorder = 'border-steel-gray';
 
         if (isHypoxia) {
-            statusBadge = `<span class="bg-rose-950 text-rose-300 border border-rose-500/50 text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse">CRITICAL HYPOXIA</span>`;
-            cardGlow = 'border-rose-600 alert-critical-glow';
+            statusBadge = `<span class="bg-critical-red/20 text-critical-red border border-critical-red/50 text-[10px] px-2 py-0.5 rounded-sm font-bold font-mono animate-pulse">CRITICAL HYPOXIA</span>`;
+            cardBorder = 'border-critical-red alert-critical-glow';
         } else if (isWarn || isTachycardia) {
-            statusBadge = `<span class="bg-amber-950 text-amber-300 border border-amber-500/40 text-[10px] px-2 py-0.5 rounded-full font-bold">WARNING</span>`;
-            cardGlow = 'border-amber-600/60';
+            statusBadge = `<span class="bg-hazard-yellow/10 text-hazard-yellow border border-hazard-yellow/40 text-[10px] px-2 py-0.5 rounded-sm font-bold font-mono">WARNING</span>`;
+            cardBorder = 'border-hazard-yellow/60';
         }
 
         return `
-            <div class="bg-slate-900/90 border ${cardGlow} rounded-2xl p-5 shadow-lg relative overflow-hidden flex flex-col justify-between">
-                <div class="flex justify-between items-start mb-4">
+            <div class="industrial-panel border-2 ${cardBorder} rounded-sm p-4 relative overflow-hidden flex flex-col justify-between font-mono">
+                <div class="flex justify-between items-start mb-3 pb-2 border-b border-steel-gray">
                     <div>
                         <div class="flex items-center gap-2">
-                            <h3 class="font-bold text-sm text-slate-100">${b.worker_name}</h3>
-                            <span class="text-[10px] text-slate-400 font-mono">ID #${b.band_id}</span>
+                            <span class="material-symbols-outlined text-hazard-yellow text-base">engineering</span>
+                            <h3 class="font-bold text-sm text-on-surface uppercase">${b.worker_name}</h3>
+                            <span class="text-[10px] text-on-surface-variant">ID #${b.band_id}</span>
                         </div>
-                        <p class="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                            <i class="fa-solid fa-route text-cyan-500"></i> Relayed via Checkpoint ${b.relayed_by} (${b.hops} hop)
+                        <p class="text-[10px] text-on-surface-variant flex items-center gap-1 mt-1">
+                            <span class="material-symbols-outlined text-xs text-hazard-yellow">alt_route</span> Relayed via CP-${b.relayed_by} (${b.hops} hop)
                         </p>
                     </div>
                     ${statusBadge}
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="grid grid-cols-2 gap-3 mb-3">
                     <!-- Heart Rate -->
-                    <div class="bg-slate-950/80 border border-slate-800/80 rounded-xl p-3 flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-rose-950/60 border border-rose-800/50 flex items-center justify-center text-rose-400">
-                            <i class="fa-solid fa-heart-pulse text-lg ${b.pulse_bpm > 0 ? 'heart-pulse' : ''}"></i>
+                    <div class="bg-carbon-black border border-steel-gray rounded-sm p-3 flex flex-col">
+                        <div class="flex items-center justify-between text-[10px] text-on-surface-variant uppercase font-semibold mb-1">
+                            <span>Heart Rate</span>
+                            <span class="material-symbols-outlined text-critical-red text-sm ${b.pulse_bpm > 0 ? 'heart-pulse' : ''}">favorite</span>
                         </div>
-                        <div>
-                            <div class="text-[10px] text-slate-400 uppercase font-semibold">Pulse Rate</div>
-                            <div class="text-xl font-bold font-mono ${isTachycardia ? 'text-rose-400' : 'text-slate-100'}">
-                                ${b.pulse_bpm.toFixed(0)} <span class="text-xs font-normal text-slate-400">BPM</span>
-                            </div>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-2xl font-bold ${isTachycardia ? 'text-critical-red' : 'text-on-surface'}">
+                                ${b.pulse_bpm.toFixed(0)}
+                            </span>
+                            <span class="text-[10px] text-on-surface-variant">BPM</span>
                         </div>
                     </div>
 
                     <!-- SpO2 -->
-                    <div class="bg-slate-950/80 border border-slate-800/80 rounded-xl p-3 flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-cyan-950/60 border border-cyan-800/50 flex items-center justify-center text-cyan-400">
-                            <i class="fa-solid fa-lungs text-lg"></i>
+                    <div class="bg-carbon-black border border-steel-gray rounded-sm p-3 flex flex-col">
+                        <div class="flex items-center justify-between text-[10px] text-on-surface-variant uppercase font-semibold mb-1">
+                            <span>Oxygen (SpO2)</span>
+                            <span class="material-symbols-outlined text-hazard-yellow text-sm">air</span>
                         </div>
-                        <div>
-                            <div class="text-[10px] text-slate-400 uppercase font-semibold">Oxygen (SpO2)</div>
-                            <div class="text-xl font-bold font-mono ${isHypoxia ? 'text-rose-400' : (isWarn ? 'text-amber-400' : 'text-cyan-300')}">
-                                ${b.spo2.toFixed(1)}<span class="text-xs font-normal text-slate-400">%</span>
-                            </div>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-2xl font-bold ${isHypoxia ? 'text-critical-red' : (isWarn ? 'text-hazard-yellow' : 'text-industrial-green')}">
+                                ${b.spo2.toFixed(1)}
+                            </span>
+                            <span class="text-[10px] text-on-surface-variant">%</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Footer details -->
-                <div class="flex justify-between items-center text-[11px] text-slate-400 border-t border-slate-800/60 pt-2.5">
-                    <span class="flex items-center gap-1.5">
-                        <i class="fa-solid fa-battery-three-quarters text-emerald-400"></i> ${b.battery_pct}% Battery
+                <div class="flex justify-between items-center text-[10px] text-on-surface-variant border-t border-steel-gray pt-2">
+                    <span class="flex items-center gap-1">
+                        <span class="material-symbols-outlined text-industrial-green text-xs">battery_charging_full</span> ${b.battery_pct}% Battery
                     </span>
-                    <span class="font-mono text-[10px] text-slate-500">Live ESP-NOW</span>
+                    <span class="text-[10px] text-on-surface-variant">ESP-NOW LINK</span>
                 </div>
             </div>
         `;
     }).join('');
+
+    if (grid) grid.innerHTML = html;
+    if (overviewGrid) overviewGrid.innerHTML = html;
 }
 
 function renderCheckpoints(cps) {
     const grid = document.getElementById('checkpoints-grid');
+    const overviewGrid = document.getElementById('overview-checkpoints-grid');
+
     if (!cps || cps.length === 0) {
-        grid.innerHTML = `
-            <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5 text-center text-slate-500 text-xs col-span-full">
-                No active checkpoints reporting.
+        const emptyHtml = `
+            <div class="industrial-panel rounded-sm p-6 text-center text-on-surface-variant font-mono text-xs col-span-full border border-steel-gray">
+                No active checkpoints reporting sensor telemetry. Listening on ESP-NOW / Wi-Fi Mesh...
             </div>`;
+        if (grid) grid.innerHTML = emptyHtml;
+        if (overviewGrid) overviewGrid.innerHTML = emptyHtml;
         return;
     }
 
-    grid.innerHTML = cps.map(cp => {
+    const html = cps.map(cp => {
         const isGasCrit = cp.mq5 >= (currentThresholds.mq5_critical || 600) || cp.mq7 >= (currentThresholds.mq7_critical || 450);
         const isSoundCrit = cp.sound_level >= (currentThresholds.sound_spike_threshold || 350);
         
-        let cardGlow = 'border-slate-800';
+        let cardBorder = 'border-steel-gray';
         if (isGasCrit || isSoundCrit) {
-            cardGlow = 'border-rose-600 alert-critical-glow';
+            cardBorder = 'border-critical-red alert-critical-glow';
         }
 
         return `
-            <div class="bg-slate-900/90 border ${cardGlow} rounded-2xl p-5 shadow-lg space-y-4">
-                <div class="flex justify-between items-start border-b border-slate-800/70 pb-3">
+            <div class="industrial-panel border-2 ${cardBorder} rounded-sm p-4 space-y-3 font-mono">
+                <div class="flex justify-between items-start border-b border-steel-gray pb-2.5">
                     <div>
                         <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                            <h3 class="font-bold text-sm text-slate-100">${cp.location}</h3>
+                            <span class="w-2 h-2 rounded-full bg-hazard-yellow animate-pulse"></span>
+                            <h3 class="font-bold text-sm text-on-surface uppercase">${cp.location}</h3>
                         </div>
-                        <div class="text-[11px] text-slate-400 font-mono mt-0.5">ESP32 Checkpoint #${cp.checkpoint_id}</div>
+                        <div class="text-[10px] text-on-surface-variant mt-0.5">ESP32 Checkpoint Node #${cp.checkpoint_id}</div>
                     </div>
-                    <span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 font-mono">
+                    <span class="text-xs px-2 py-0.5 rounded-sm bg-carbon-black border border-steel-gray text-on-surface">
                         ${cp.temperature.toFixed(1)}°C | ${cp.humidity.toFixed(0)}%
                     </span>
                 </div>
 
                 <div class="space-y-2 text-xs">
+                    <!-- MQ5 -->
                     <div>
                         <div class="flex justify-between text-[11px] mb-1">
-                            <span class="text-slate-400">MQ5 Combustible (GPIO 33):</span>
-                            <span class="font-mono font-bold ${cp.mq5 > 350 ? 'text-rose-400' : 'text-slate-200'}">${cp.mq5}</span>
+                            <span class="text-on-surface-variant">MQ5 Combustible Gas (GPIO 33):</span>
+                            <span class="font-bold ${cp.mq5 > 350 ? 'text-critical-red' : 'text-on-surface'}">${cp.mq5} <span class="text-[10px] text-on-surface-variant font-normal">ADC</span></span>
                         </div>
-                        <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                            <div class="h-full bg-amber-500 rounded-full" style="width: ${Math.min(100, (cp.mq5 / 800) * 100)}%"></div>
+                        <div class="w-full h-1.5 bg-carbon-black border border-steel-gray rounded-sm overflow-hidden">
+                            <div class="h-full bg-hazard-yellow rounded-sm transition-all" style="width: ${Math.min(100, (cp.mq5 / 800) * 100)}%"></div>
                         </div>
                     </div>
 
+                    <!-- MQ7 -->
                     <div>
                         <div class="flex justify-between text-[11px] mb-1">
-                            <span class="text-slate-400">MQ7 Carbon Monoxide (GPIO 34):</span>
-                            <span class="font-mono font-bold ${cp.mq7 > 250 ? 'text-rose-400' : 'text-slate-200'}">${cp.mq7}</span>
+                            <span class="text-on-surface-variant">MQ7 Carbon Monoxide (GPIO 34):</span>
+                            <span class="font-bold ${cp.mq7 > 250 ? 'text-critical-red' : 'text-on-surface'}">${cp.mq7} <span class="text-[10px] text-on-surface-variant font-normal">ADC</span></span>
                         </div>
-                        <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                            <div class="h-full bg-rose-500 rounded-full" style="width: ${Math.min(100, (cp.mq7 / 600) * 100)}%"></div>
+                        <div class="w-full h-1.5 bg-carbon-black border border-steel-gray rounded-sm overflow-hidden">
+                            <div class="h-full bg-critical-red rounded-sm transition-all" style="width: ${Math.min(100, (cp.mq7 / 600) * 100)}%"></div>
                         </div>
                     </div>
 
+                    <!-- MQ135 -->
                     <div>
                         <div class="flex justify-between text-[11px] mb-1">
-                            <span class="text-slate-400">MQ135 Air Quality (GPIO 35):</span>
-                            <span class="font-mono font-bold ${cp.mq135 > 350 ? 'text-rose-400' : 'text-slate-200'}">${cp.mq135}</span>
+                            <span class="text-on-surface-variant">MQ135 Air Quality (GPIO 35):</span>
+                            <span class="font-bold ${cp.mq135 > 350 ? 'text-critical-red' : 'text-on-surface'}">${cp.mq135} <span class="text-[10px] text-on-surface-variant font-normal">ADC</span></span>
                         </div>
-                        <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                            <div class="h-full bg-cyan-500 rounded-full" style="width: ${Math.min(100, (cp.mq135 / 700) * 100)}%"></div>
+                        <div class="w-full h-1.5 bg-carbon-black border border-steel-gray rounded-sm overflow-hidden">
+                            <div class="h-full bg-safety-orange rounded-sm transition-all" style="width: ${Math.min(100, (cp.mq135 / 700) * 100)}%"></div>
                         </div>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 pt-1 text-center">
-                    <div class="bg-slate-950/70 border border-slate-800 p-2.5 rounded-xl">
-                        <div class="text-[10px] text-slate-400 uppercase font-semibold mb-1">PIR Motion (HW-416-B: GPIO 26)</div>
-                        <span class="inline-block text-[10px] font-bold px-2.5 py-0.5 rounded-full ${cp.pir_motion ? 'bg-amber-950 text-amber-300 border border-amber-500/40 animate-pulse' : 'bg-slate-800 text-slate-400'}">
-                            ${cp.pir_motion ? 'MOTION DETECTED' : 'CLEAR / NO MOTION'}
+                    <div class="bg-carbon-black border border-steel-gray p-2 rounded-sm">
+                        <div class="text-[9px] text-on-surface-variant uppercase font-semibold mb-1">PIR Motion (HW-416-B)</div>
+                        <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-sm ${cp.pir_motion ? 'bg-hazard-yellow/20 text-hazard-yellow border border-hazard-yellow/50 animate-pulse' : 'bg-surface-container-high text-on-surface-variant border border-steel-gray'}">
+                            ${cp.pir_motion ? 'MOTION DETECTED' : 'CLEAR'}
                         </span>
                     </div>
 
-                    <div class="bg-slate-950/70 border border-slate-800 p-2.5 rounded-xl">
-                        <div class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Sound Peak (HW-484: GPIO 27)</div>
-                        <span class="font-mono text-xs font-bold ${isSoundCrit ? 'text-rose-400 font-extrabold animate-pulse' : 'text-slate-200'}">
-                            ${cp.sound_level} ADC ${isSoundCrit ? '(SPIKE!)' : ''}
+                    <div class="bg-carbon-black border border-steel-gray p-2 rounded-sm">
+                        <div class="text-[9px] text-on-surface-variant uppercase font-semibold mb-1">Sound (HW-484)</div>
+                        <span class="text-xs font-bold ${isSoundCrit ? 'text-critical-red font-extrabold animate-pulse' : 'text-on-surface'}">
+                            ${cp.sound_level} ADC ${isSoundCrit ? '⚠️' : ''}
                         </span>
                     </div>
                 </div>
             </div>
         `;
     }).join('');
+
+    if (grid) grid.innerHTML = html;
+    if (overviewGrid) overviewGrid.innerHTML = html;
 }
 
 function renderRover(rover) {
-    document.getElementById('rover-battery-val').innerText = `${rover.battery_pct || 90}%`;
-    document.getElementById('rover-hud-status').innerText = `STATUS: ${rover.command_name} | SPEED: ${rover.speed}`;
+    if (!rover) return;
+    const battVal = document.getElementById('rover-battery-val');
+    const hudVal = document.getElementById('rover-hud-status');
+    if (battVal) battVal.innerText = `${rover.battery_pct || 90}%`;
+    if (hudVal) hudVal.innerText = `STATUS: ${rover.command_name || 'STOP'} | SPEED: ${rover.speed || 0}`;
 
     const banner = document.getElementById('rover-connection-banner');
     const cpLinkText = document.getElementById('rover-checkpoint-link');
@@ -336,17 +455,19 @@ function renderRover(rover) {
         const cpId = rover.connected_checkpoint_id || 1;
         const cpLoc = rover.connected_checkpoint_location || 'Zone-A (Main Shaft)';
 
-        banner.className = 'bg-emerald-950/70 border border-emerald-500/60 text-emerald-300 px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between shadow-lg transition-all animate-pulse';
-        banner.innerHTML = `
-            <div class="flex items-center gap-2.5">
-                <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
-                <span>ROVER CONNECTED TO CHECKPOINT ${cpId} (${cpLoc}) - TELEMETRY & STEERING LINK ACTIVE</span>
-            </div>
-            <span class="text-[10px] font-mono bg-emerald-900/80 px-2 py-0.5 rounded text-emerald-200 border border-emerald-600/40">ESP-NOW LINK OK</span>
-        `;
+        if (banner) {
+            banner.className = 'industrial-panel border-2 border-industrial-green text-industrial-green px-4 py-2.5 rounded-sm text-xs flex items-center justify-between transition-all';
+            banner.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-industrial-green text-base">check_circle</span>
+                    <span class="font-bold">ROVER CONNECTED TO CHECKPOINT ${cpId} (${cpLoc}) — TELEMETRY & STEERING ACTIVE</span>
+                </div>
+                <span class="text-[10px] bg-industrial-green/10 border border-industrial-green/30 px-2 py-0.5 rounded-sm text-industrial-green">ESP-NOW LINK OK</span>
+            `;
+        }
 
         if (cpLinkText) {
-            cpLinkText.innerHTML = `<span class="text-emerald-400">CHECKPOINT ${cpId} (${cpLoc})</span>`;
+            cpLinkText.innerHTML = `<span class="text-industrial-green font-bold">CHECKPOINT ${cpId} (${cpLoc})</span>`;
         }
 
         if (!lastRoverOnline) {
@@ -355,17 +476,19 @@ function renderRover(rover) {
         lastRoverOnline = true;
 
     } else {
-        banner.className = 'bg-slate-900/80 border border-slate-700/60 text-slate-400 px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between shadow-lg transition-all';
-        banner.innerHTML = `
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-satellite-dish text-amber-400"></i>
-                <span>WAITING FOR ROVER TELEMETRY / CHECKPOINT HEARTBEAT...</span>
-            </div>
-            <span class="text-[10px] font-mono text-slate-500">STANDBY</span>
-        `;
+        if (banner) {
+            banner.className = 'bg-surface-container-low border-2 border-steel-gray text-on-surface-variant px-4 py-2.5 rounded-sm text-xs flex items-center justify-between transition-all';
+            banner.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-safety-orange text-sm animate-spin">sync</span>
+                    <span>WAITING FOR ROVER TELEMETRY / CHECKPOINT HEARTBEAT...</span>
+                </div>
+                <span class="text-[10px] bg-carbon-black border border-steel-gray px-2 py-0.5 rounded-sm text-on-surface-variant">STANDBY</span>
+            `;
+        }
 
         if (cpLinkText) {
-            cpLinkText.innerHTML = `<span class="text-slate-500">OFFLINE / SEARCHING</span>`;
+            cpLinkText.innerHTML = `<span class="text-on-surface-variant">OFFLINE / SEARCHING</span>`;
         }
         lastRoverOnline = false;
     }
@@ -373,39 +496,43 @@ function renderRover(rover) {
 
 function renderTopology(cps, bands) {
     const topo = document.getElementById('mesh-topology-view');
+    if (!topo) return;
     topo.innerHTML = `
-        <div class="bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
-            <i class="fa-solid fa-user-shield text-emerald-400 text-lg mb-1"></i>
-            <div class="font-bold text-slate-200">Worker Bands (${bands.length})</div>
-            <div class="text-[10px] text-slate-400">ESP-NOW Broadcast</div>
+        <div class="bg-carbon-black border border-steel-gray p-3.5 rounded-sm space-y-1">
+            <span class="material-symbols-outlined text-industrial-green text-2xl mb-1">engineering</span>
+            <div class="font-bold text-on-surface">Worker Bands (${bands ? bands.length : 0})</div>
+            <div class="text-[10px] text-on-surface-variant">ESP-NOW 2.4 GHz Broadcast</div>
         </div>
-        <div class="bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
-            <i class="fa-solid fa-tower-broadcast text-cyan-400 text-lg mb-1"></i>
-            <div class="font-bold text-slate-200">Nearest Checkpoint</div>
-            <div class="text-[10px] text-slate-400">ESP-NOW Ingestion</div>
+        <div class="bg-carbon-black border border-steel-gray p-3.5 rounded-sm space-y-1">
+            <span class="material-symbols-outlined text-hazard-yellow text-2xl mb-1">cell_tower</span>
+            <div class="font-bold text-on-surface">Nearest Checkpoint (${cps ? cps.length : 0})</div>
+            <div class="text-[10px] text-on-surface-variant">Direct Sensor Ingestion</div>
         </div>
-        <div class="bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
-            <i class="fa-solid fa-arrows-split-up-and-left text-purple-400 text-lg mb-1"></i>
-            <div class="font-bold text-slate-200">Mesh Hop Relay</div>
-            <div class="text-[10px] text-slate-400">Failover Forwarding</div>
+        <div class="bg-carbon-black border border-steel-gray p-3.5 rounded-sm space-y-1">
+            <span class="material-symbols-outlined text-safety-orange text-2xl mb-1">alt_route</span>
+            <div class="font-bold text-on-surface">Mesh Hop Relays</div>
+            <div class="text-[10px] text-on-surface-variant">Subterranean Failover Forwarding</div>
         </div>
-        <div class="bg-slate-950/80 border border-cyan-500/40 p-3 rounded-xl bg-cyan-950/20">
-            <i class="fa-solid fa-server text-cyan-400 text-lg mb-1"></i>
-            <div class="font-bold text-cyan-300">Station Hotspot</div>
-            <div class="text-[10px] text-slate-400">HTTP REST Ingestion</div>
+        <div class="bg-carbon-black border-2 border-hazard-yellow p-3.5 rounded-sm space-y-1 bg-hazard-yellow/5">
+            <span class="material-symbols-outlined text-hazard-yellow text-2xl mb-1">dns</span>
+            <div class="font-bold text-hazard-yellow">Surface Station Gateway</div>
+            <div class="text-[10px] text-on-surface-variant">Wi-Fi HTTP REST / UDP Control</div>
         </div>
     `;
 }
 
 // ================= ROVER CONTROL =================
 
-let speedSlider = document.getElementById('rover-speed-slider');
-speedSlider.addEventListener('input', (e) => {
-    document.getElementById('rover-speed-val').innerText = `${e.target.value} / 255`;
-});
+const speedSlider = document.getElementById('rover-speed-slider');
+if (speedSlider) {
+    speedSlider.addEventListener('input', (e) => {
+        document.getElementById('rover-speed-val').innerText = `${e.target.value} / 255`;
+    });
+}
 
 async function sendRoverCmd(cmd) {
-    const speed = parseInt(document.getElementById('rover-speed-slider').value);
+    const slider = document.getElementById('rover-speed-slider');
+    const speed = slider ? parseInt(slider.value) : 200;
     try {
         await fetch('/api/rover/command', {
             method: 'POST',
@@ -421,7 +548,9 @@ async function sendRoverCmd(cmd) {
 let activeKeys = {};
 window.addEventListener('keydown', (e) => {
     if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "KeyW", "KeyA", "KeyS", "KeyD"].includes(e.code)) {
-        e.preventDefault();
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+        }
     }
     if (activeKeys[e.code]) return;
     activeKeys[e.code] = true;
@@ -444,15 +573,27 @@ window.addEventListener('keyup', (e) => {
 
 function refreshCharts() {
     const ts = Date.now();
-    document.getElementById('chart-gas').src = `/api/charts/gas.png?t=${ts}`;
-    document.getElementById('chart-vitals').src = `/api/charts/vitals.png?t=${ts}`;
-    document.getElementById('chart-noise').src = `/api/charts/noise.png?t=${ts}`;
-    document.getElementById('chart-environment').src = `/api/charts/environment.png?t=${ts}`;
+    const gasChart = document.getElementById('chart-gas');
+    const gasDedicated = document.getElementById('chart-gas-dedicated');
+    const vitalsChart = document.getElementById('chart-vitals');
+    const vitalsDedicated = document.getElementById('chart-vitals-dedicated');
+    const noiseChart = document.getElementById('chart-noise');
+    const envChart = document.getElementById('chart-environment');
+
+    if (gasChart) gasChart.src = `/api/charts/gas.png?t=${ts}`;
+    if (gasDedicated) gasDedicated.src = `/api/charts/gas.png?t=${ts}`;
+    if (vitalsChart) vitalsChart.src = `/api/charts/vitals.png?t=${ts}`;
+    if (vitalsDedicated) vitalsDedicated.src = `/api/charts/vitals.png?t=${ts}`;
+    if (noiseChart) noiseChart.src = `/api/charts/noise.png?t=${ts}`;
+    if (envChart) envChart.src = `/api/charts/environment.png?t=${ts}`;
 }
 
 function refreshCamera() {
     const ts = Date.now();
-    document.getElementById('rover-camera-img').src = `/api/camera/latest.jpg?t=${ts}`;
+    const cam = document.getElementById('rover-camera-img');
+    const overviewCam = document.getElementById('overview-rover-camera-img');
+    if (cam) cam.src = `/api/camera/latest.jpg?t=${ts}`;
+    if (overviewCam) overviewCam.src = `/api/camera/latest.jpg?t=${ts}`;
 }
 
 // ================= ALERTS ACK & THRESHOLDS =================
@@ -463,21 +604,31 @@ async function clearAlerts() {
 }
 
 function openThresholdModal() {
-    document.getElementById('th-spo2-critical').value = currentThresholds.spo2_critical || 90.0;
-    document.getElementById('th-mq5-critical').value = currentThresholds.mq5_critical || 600;
-    document.getElementById('th-mq7-critical').value = currentThresholds.mq7_critical || 450;
-    document.getElementById('th-mq135-critical').value = currentThresholds.mq135_critical || 550;
-    document.getElementById('th-sound-spike').value = currentThresholds.sound_spike_threshold || 350;
+    const spo2 = document.getElementById('th-spo2-critical');
+    const mq5 = document.getElementById('th-mq5-critical');
+    const mq7 = document.getElementById('th-mq7-critical');
+    const mq135 = document.getElementById('th-mq135-critical');
+    const sound = document.getElementById('th-sound-spike');
+
+    if (spo2) spo2.value = currentThresholds.spo2_critical || 90.0;
+    if (mq5) mq5.value = currentThresholds.mq5_critical || 600;
+    if (mq7) mq7.value = currentThresholds.mq7_critical || 450;
+    if (mq135) mq135.value = currentThresholds.mq135_critical || 550;
+    if (sound) sound.value = currentThresholds.sound_spike_threshold || 350;
 
     const modal = document.getElementById('threshold-modal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
 }
 
 function closeThresholdModal() {
     const modal = document.getElementById('threshold-modal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 }
 
 async function saveThresholds() {
@@ -500,9 +651,16 @@ async function saveThresholds() {
     refreshCharts();
 }
 
-// ================= INITIALIZATION TIMERS =================
+// ================= INITIALIZATION =================
 
 window.addEventListener('DOMContentLoaded', () => {
+    // 1. Determine Initial View from body attribute or URL pathname
+    const bodyInitialView = document.body.dataset.initialView;
+    const path = window.location.pathname;
+    const mappedView = PATH_TO_VIEW[path] || bodyInitialView || 'overview';
+    switchView(mappedView);
+
+    // 2. Fetch initial data and start timers
     fetchSystemData();
     refreshCharts();
 
