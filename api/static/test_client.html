@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Field Safety Monitoring System - Universal Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #0b0f19; color: #e2e8f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .glass-card { background: rgba(17, 24, 39, 0.75); backdrop-filter: blur(8px); border: 1px solid rgba(55, 65, 81, 0.5); }
+        .badge-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+        .ctrl-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-6">
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center pb-4 mb-6 border-b border-gray-800 gap-4">
+        <div>
+            <div class="flex items-center gap-3">
+                <span class="text-2xl text-cyan-400"><i class="fa-solid fa-shield-halved"></i></span>
+                <h1 class="text-xl md:text-2xl font-bold text-white tracking-wide">FIELD SAFETY MONITORING SYSTEM</h1>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-900 text-cyan-300 border border-cyan-700">API v1.0</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Universal Frontend & External Platform Connector</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            <button id="btn-toggle-sim" onclick="toggleSimulator()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-2">
+                <i class="fa-solid fa-play"></i> <span id="sim-text">Start Simulation</span>
+            </button>
+            <a href="/docs" target="_blank" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-book"></i> Swagger Docs
+            </a>
+            <div class="flex items-center gap-2 bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-800">
+                <span id="ws-indicator" class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                <span id="ws-status" class="text-xs text-gray-300">Connecting...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Top Summary Banner -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        <div class="glass-card rounded-xl p-3 flex flex-col">
+            <span class="text-xs text-gray-400">System Status</span>
+            <span id="sys-status" class="text-lg font-bold text-emerald-400 mt-1">NORMAL</span>
+        </div>
+        <div class="glass-card rounded-xl p-3 flex flex-col">
+            <span class="text-xs text-gray-400">Workers Active</span>
+            <span id="stat-workers" class="text-lg font-bold text-cyan-400 mt-1">0 / 0</span>
+        </div>
+        <div class="glass-card rounded-xl p-3 flex flex-col">
+            <span class="text-xs text-gray-400">Checkpoints</span>
+            <span id="stat-cps" class="text-lg font-bold text-cyan-400 mt-1">0 / 0</span>
+        </div>
+        <div class="glass-card rounded-xl p-3 flex flex-col">
+            <span class="text-xs text-gray-400">Rover Connection</span>
+            <span id="stat-rover" class="text-lg font-bold text-gray-400 mt-1">OFFLINE</span>
+        </div>
+        <div class="glass-card rounded-xl p-3 flex flex-col">
+            <span class="text-xs text-gray-400">Active Critical Alerts</span>
+            <span id="stat-crit-alerts" class="text-lg font-bold text-emerald-400 mt-1">0</span>
+        </div>
+        <div class="glass-card rounded-xl p-3 flex flex-col">
+            <span class="text-xs text-gray-400">Server Clock</span>
+            <span id="stat-time" class="text-sm font-mono font-semibold text-gray-300 mt-1.5">--:--:--</span>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left 7 Cols: Video Stream & Rover Teleoperation -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Video Feed Card -->
+            <div class="glass-card rounded-xl p-4 shadow-xl">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-rose-500 text-sm"><i class="fa-solid fa-video"></i></span>
+                        <h2 class="text-sm font-bold tracking-wider text-gray-200">LIVE ROVER CAMERA FEED</h2>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-rose-950 text-rose-300 border border-rose-800 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 badge-pulse"></span> MJPEG 15 FPS
+                    </span>
+                </div>
+                
+                <!-- Video Display Frame -->
+                <div class="relative bg-black rounded-lg overflow-hidden border border-gray-800 aspect-video flex items-center justify-center">
+                    <img id="camera-stream" src="/api/v1/camera/stream" alt="Live Camera Feed" class="w-full h-full object-contain" onerror="this.src='/api/v1/camera/latest.jpg'" />
+                    <div class="absolute bottom-2 left-2 bg-black/60 backdrop-blur px-2.5 py-1 rounded text-xs font-mono text-cyan-300 border border-gray-800">
+                        ROVER #1 <span id="rover-ip-tag" class="text-gray-400">| Wi-Fi / Mesh</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rover Teleoperation Joystick / Controls -->
+            <div class="glass-card rounded-xl p-4 shadow-xl">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-cyan-400 text-sm"><i class="fa-solid fa-gamepad"></i></span>
+                        <h2 class="text-sm font-bold tracking-wider text-gray-200">ROVER TELEOPERATION CONTROLS</h2>
+                    </div>
+                    <span class="text-xs text-gray-400">WASD / Arrow Key Binding Active</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    <!-- Virtual D-Pad -->
+                    <div class="flex flex-col items-center justify-center p-2">
+                        <button onmousedown="sendRoverCmd('FORWARD')" onmouseup="sendRoverCmd('STOP')" class="ctrl-btn w-24 h-11 bg-cyan-900 hover:bg-cyan-700 text-cyan-200 font-bold rounded-lg border border-cyan-700 transition flex items-center justify-center gap-1 mb-2">
+                            <i class="fa-solid fa-chevron-up"></i> FWD (W)
+                        </button>
+                        <div class="flex gap-2">
+                            <button onmousedown="sendRoverCmd('LEFT')" onmouseup="sendRoverCmd('STOP')" class="ctrl-btn w-20 h-11 bg-cyan-900 hover:bg-cyan-700 text-cyan-200 font-bold rounded-lg border border-cyan-700 transition flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-chevron-left"></i> L (A)
+                            </button>
+                            <button onclick="sendRoverCmd('STOP')" class="ctrl-btn w-20 h-11 bg-rose-900 hover:bg-rose-700 text-rose-200 font-bold rounded-lg border border-rose-700 transition flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-stop"></i> STOP
+                            </button>
+                            <button onmousedown="sendRoverCmd('RIGHT')" onmouseup="sendRoverCmd('STOP')" class="ctrl-btn w-20 h-11 bg-cyan-900 hover:bg-cyan-700 text-cyan-200 font-bold rounded-lg border border-cyan-700 transition flex items-center justify-center gap-1">
+                                R (D) <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <button onmousedown="sendRoverCmd('BACKWARD')" onmouseup="sendRoverCmd('STOP')" class="ctrl-btn w-24 h-11 bg-cyan-900 hover:bg-cyan-700 text-cyan-200 font-bold rounded-lg border border-cyan-700 transition flex items-center justify-center gap-1 mt-2">
+                            <i class="fa-solid fa-chevron-down"></i> BACK (S)
+                        </button>
+                    </div>
+
+                    <!-- Telemetry & Speed Settings -->
+                    <div class="space-y-3 bg-gray-900/60 p-3 rounded-lg border border-gray-800">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-gray-400">PWM Speed: <span id="speed-val" class="text-cyan-400 font-bold">200</span></span>
+                                <span class="text-gray-500">Max 255</span>
+                            </div>
+                            <input id="speed-slider" type="range" min="50" max="255" value="200" oninput="document.getElementById('speed-val').innerText = this.value" class="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="bg-gray-800/80 p-2 rounded border border-gray-700">
+                                <span class="text-gray-400">Current Action</span>
+                                <div id="rover-cmd-disp" class="text-sm font-bold text-white mt-0.5">STOP</div>
+                            </div>
+                            <div class="bg-gray-800/80 p-2 rounded border border-gray-700">
+                                <span class="text-gray-400">Battery Level</span>
+                                <div id="rover-batt-disp" class="text-sm font-bold text-emerald-400 mt-0.5">-- %</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Worker Monitoring Bands Vitals -->
+            <div class="glass-card rounded-xl p-4 shadow-xl">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-emerald-400 text-sm"><i class="fa-solid fa-heart-pulse"></i></span>
+                        <h2 class="text-sm font-bold tracking-wider text-gray-200">WORKER MONITORING BANDS (VITALS)</h2>
+                    </div>
+                    <span class="text-xs text-gray-400">SPO2 + Pulse Sensors</span>
+                </div>
+
+                <div id="bands-container" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="p-3 bg-gray-900/60 rounded-lg text-center text-xs text-gray-500">No worker bands active</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right 5 Cols: Checkpoints, Environment Sensors & Alerts -->
+        <div class="lg:col-span-5 space-y-6">
+
+            <!-- Checkpoint Sensors -->
+            <div class="glass-card rounded-xl p-4 shadow-xl">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-amber-400 text-sm"><i class="fa-solid fa-tower-broadcast"></i></span>
+                        <h2 class="text-sm font-bold tracking-wider text-gray-200">ENVIRONMENTAL CHECKPOINTS</h2>
+                    </div>
+                    <span class="text-xs text-gray-400">Gas, Sound, Temp, PIR</span>
+                </div>
+
+                <div id="checkpoints-container" class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                    <div class="p-3 bg-gray-900/60 rounded-lg text-center text-xs text-gray-500">No checkpoint telemetry received</div>
+                </div>
+            </div>
+
+            <!-- Safety Alerts Feed -->
+            <div class="glass-card rounded-xl p-4 shadow-xl">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-rose-400 text-sm"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                        <h2 class="text-sm font-bold tracking-wider text-gray-200">SAFETY ALERTS FEED</h2>
+                    </div>
+                    <button onclick="ackAlerts()" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold">Acknowledge All</button>
+                </div>
+
+                <div id="alerts-container" class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                    <div class="p-3 bg-gray-900/60 rounded-lg text-center text-xs text-gray-500">No active hazard alerts</div>
+                </div>
+            </div>
+
+            <!-- External Integrations & Export Box -->
+            <div class="glass-card rounded-xl p-4 shadow-xl">
+                <h3 class="text-xs font-bold text-gray-300 mb-2 uppercase tracking-wider">External Integration Endpoints</h3>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <a href="/api/v1/export/csv/checkpoints" download class="p-2 bg-gray-800 hover:bg-gray-700 rounded text-center text-gray-300 font-medium transition border border-gray-700">
+                        <i class="fa-solid fa-file-csv mr-1"></i> Export Sensors CSV
+                    </a>
+                    <a href="/api/v1/export/csv/bands" download class="p-2 bg-gray-800 hover:bg-gray-700 rounded text-center text-gray-300 font-medium transition border border-gray-700">
+                        <i class="fa-solid fa-file-csv mr-1"></i> Export Vitals CSV
+                    </a>
+                    <a href="/api/v1/events/sse" target="_blank" class="p-2 bg-gray-800 hover:bg-gray-700 rounded text-center text-gray-300 font-medium transition border border-gray-700">
+                        <i class="fa-solid fa-rss mr-1"></i> SSE Stream
+                    </a>
+                    <a href="/openapi.json" target="_blank" class="p-2 bg-gray-800 hover:bg-gray-700 rounded text-center text-gray-300 font-medium transition border border-gray-700">
+                        <i class="fa-solid fa-code mr-1"></i> OpenAPI Spec
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        let ws = null;
+        let simRunning = false;
+
+        function connectWebSocket() {
+            const loc = window.location;
+            const wsProtocol = loc.protocol === "https:" ? "wss:" : "ws:";
+            const wsUrl = `${wsProtocol}//${loc.host}/api/v1/ws/live`;
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                document.getElementById("ws-indicator").className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                document.getElementById("ws-status").innerText = "Live WebSocket Connected";
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === "initial_state" || msg.type === "telemetry_update") {
+                        updateUI(msg.data);
+                    }
+                } catch (e) {
+                    console.error("WS Parse error", e);
+                }
+            };
+
+            ws.onclose = () => {
+                document.getElementById("ws-indicator").className = "w-2.5 h-2.5 rounded-full bg-red-500";
+                document.getElementById("ws-status").innerText = "Reconnecting...";
+                setTimeout(connectWebSocket, 2000);
+            };
+        }
+
+        function updateUI(data) {
+            if (!data) return;
+
+            // Clock & Summary
+            document.getElementById("stat-time").innerText = data.server_time ? data.server_time.split(" ")[1] : "--:--:--";
+            
+            const summary = data.device_summary || {};
+            document.getElementById("stat-workers").innerText = `${summary.online_workers || 0} / ${summary.total_workers || 0}`;
+            document.getElementById("stat-cps").innerText = `${summary.online_checkpoints || 0} / ${summary.total_checkpoints || 0}`;
+            
+            const rover = data.rover || {};
+            const roverOnline = rover.is_online || rover.is_connected;
+            const rElem = document.getElementById("stat-rover");
+            rElem.innerText = roverOnline ? "ONLINE" : "STANDBY";
+            rElem.className = `text-lg font-bold ${roverOnline ? "text-emerald-400" : "text-gray-400"} mt-1`;
+
+            document.getElementById("rover-cmd-disp").innerText = rover.command_name || "STOP";
+            document.getElementById("rover-batt-disp").innerText = `${rover.battery_pct || 90}%`;
+
+            // Checkpoints
+            const cpContainer = document.getElementById("checkpoints-container");
+            if (data.checkpoints && data.checkpoints.length > 0) {
+                cpContainer.innerHTML = data.checkpoints.map(cp => `
+                    <div class="p-3 bg-gray-900/80 rounded-lg border border-gray-800">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="font-bold text-xs text-white">#${cp.checkpoint_id}: ${cp.location}</span>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded font-mono ${cp.is_online ? 'bg-emerald-950 text-emerald-300' : 'bg-gray-800 text-gray-400'}">${cp.is_online ? 'ACTIVE' : 'OFFLINE'}</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 text-[11px] text-gray-300">
+                            <div><span class="text-gray-500">MQ5:</span> <span class="font-mono text-cyan-300 font-bold">${cp.mq5.toFixed(1)}</span></div>
+                            <div><span class="text-gray-500">MQ7:</span> <span class="font-mono text-cyan-300 font-bold">${cp.mq7.toFixed(1)}</span></div>
+                            <div><span class="text-gray-500">MQ135:</span> <span class="font-mono text-cyan-300 font-bold">${cp.mq135.toFixed(1)}</span></div>
+                            <div><span class="text-gray-500">Sound:</span> <span class="font-mono text-cyan-300 font-bold">${cp.sound_level.toFixed(0)}</span></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-[11px] text-gray-300 mt-1.5 pt-1 border-t border-gray-800">
+                            <div><span class="text-gray-500">Temp:</span> <span class="font-mono">${cp.temperature.toFixed(1)}°C</span></div>
+                            <div><span class="text-gray-500">Hum:</span> <span class="font-mono">${cp.humidity.toFixed(1)}%</span></div>
+                            <div><span class="text-gray-500">PIR:</span> <span class="font-mono ${cp.pir_motion ? 'text-amber-400 font-bold' : 'text-gray-400'}">${cp.pir_motion ? 'MOTION' : 'CLEAR'}</span></div>
+                        </div>
+                    </div>
+                `).join("");
+            }
+
+            // Worker Bands
+            const bandsContainer = document.getElementById("bands-container");
+            if (data.bands && data.bands.length > 0) {
+                bandsContainer.innerHTML = data.bands.map(b => {
+                    const isHypoxia = b.spo2 < 92.0;
+                    return `
+                    <div class="p-3 bg-gray-900/80 rounded-lg border ${isHypoxia ? 'border-rose-600 bg-rose-950/30' : 'border-gray-800'}">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-xs text-white">${b.worker_name}</span>
+                            <span class="text-[10px] text-gray-400 font-mono">Hop CP-${b.relayed_by}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            <div class="bg-gray-800/80 p-2 rounded text-center">
+                                <span class="text-[10px] text-gray-400 block">SPO2</span>
+                                <span class="text-base font-bold font-mono ${isHypoxia ? 'text-rose-400' : 'text-emerald-400'}">${b.spo2.toFixed(1)}%</span>
+                            </div>
+                            <div class="bg-gray-800/80 p-2 rounded text-center">
+                                <span class="text-[10px] text-gray-400 block">PULSE</span>
+                                <span class="text-base font-bold font-mono text-cyan-300">${b.pulse_bpm.toFixed(0)} <span class="text-[10px] text-gray-500">BPM</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }).join("");
+            }
+
+            // Alerts Feed
+            const alertsContainer = document.getElementById("alerts-container");
+            if (data.alerts && data.alerts.length > 0) {
+                const critCount = data.alerts.filter(a => a.level === "CRITICAL" && !a.acked).length;
+                document.getElementById("stat-crit-alerts").innerText = critCount;
+                document.getElementById("stat-crit-alerts").className = `text-lg font-bold ${critCount > 0 ? 'text-rose-500 badge-pulse' : 'text-emerald-400'} mt-1`;
+
+                document.getElementById("sys-status").innerText = critCount > 0 ? "CRITICAL" : "NORMAL";
+                document.getElementById("sys-status").className = `text-lg font-bold ${critCount > 0 ? 'text-rose-500' : 'text-emerald-400'} mt-1`;
+
+                alertsContainer.innerHTML = data.alerts.slice(0, 8).map(a => `
+                    <div class="p-2.5 rounded-lg text-xs border ${a.level === 'CRITICAL' ? 'bg-rose-950/40 border-rose-700/60 text-rose-200' : (a.level === 'WARNING' ? 'bg-amber-950/40 border-amber-700/60 text-amber-200' : 'bg-gray-800 border-gray-700 text-gray-300')}">
+                        <div class="flex justify-between font-semibold mb-0.5">
+                            <span>[${a.level}] ${a.category} - ${a.device_id}</span>
+                            <span class="font-mono text-[10px] text-gray-400">${a.timestamp}</span>
+                        </div>
+                        <p class="text-[11px] opacity-90">${a.message}</p>
+                    </div>
+                `).join("");
+            }
+        }
+
+        function sendRoverCmd(cmd) {
+            const speed = parseInt(document.getElementById("speed-slider").value) || 200;
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ action: "rover_command", command: cmd, speed: speed }));
+            } else {
+                fetch("/api/v1/rover/command", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ command: cmd, speed: speed })
+                });
+            }
+        }
+
+        // Keyboard bindings
+        window.addEventListener('keydown', (e) => {
+            if (["w", "ArrowUp"].includes(e.key)) sendRoverCmd("FORWARD");
+            if (["s", "ArrowDown"].includes(e.key)) sendRoverCmd("BACKWARD");
+            if (["a", "ArrowLeft"].includes(e.key)) sendRoverCmd("LEFT");
+            if (["d", "ArrowRight"].includes(e.key)) sendRoverCmd("RIGHT");
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (["w", "s", "a", "d", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+                sendRoverCmd("STOP");
+            }
+        });
+
+        async function toggleSimulator() {
+            const endpoint = simRunning ? "/api/v1/system/simulator/stop" : "/api/v1/system/simulator/start";
+            const res = await fetch(endpoint, { method: "POST" });
+            const data = await res.json();
+            simRunning = data.is_running;
+            document.getElementById("sim-text").innerText = simRunning ? "Stop Simulation" : "Start Simulation";
+            document.getElementById("btn-toggle-sim").className = `px-3 py-1.5 rounded-lg text-xs font-semibold ${simRunning ? 'bg-rose-600 hover:bg-rose-500' : 'bg-emerald-600 hover:bg-emerald-500'} text-white transition flex items-center gap-2`;
+        }
+
+        async function ackAlerts() {
+            await fetch("/api/v1/alerts/ack", { method: "POST" });
+        }
+
+        // Initialize WebSocket connection
+        connectWebSocket();
+    </script>
+</body>
+</html>

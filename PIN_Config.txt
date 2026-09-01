@@ -1,0 +1,10 @@
+For checkpoint
+MQ5: 33
+MQ7: 34
+MQ135: 35
+HW-416-B:26
+HW-484-V0.2: 27
+DHT11: 15
+
+This the final soldered configuration
+Need only true/false for PIR sensor
