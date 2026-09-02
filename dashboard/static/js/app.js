@@ -10,6 +10,14 @@ let lastAlertCount = 0;
 let lastRoverOnline = false;
 let currentView = 'overview';
 
+// Optimization & Concurrency Guards
+let lastAlertsSig = '';
+let lastWorkersSig = '';
+let lastCheckpointsSig = '';
+let lastTopologySig = '';
+let isDataFetching = false;
+let isCameraLoading = false;
+
 // ================= CONTEXTUAL VIEW & ROUTE SWITCHER =================
 
 const VIEW_CONFIG = {
@@ -73,6 +81,10 @@ function switchView(viewName) {
     // Scroll main body to top
     const mainEl = document.querySelector('main');
     if (mainEl) mainEl.scrollTop = 0;
+
+    // Immediate refresh for view-relevant assets
+    refreshCharts();
+    refreshCamera();
 }
 
 window.addEventListener('popstate', (event) => {
@@ -137,23 +149,39 @@ document.getElementById('btn-audio-toggle').addEventListener('click', function (
 // ================= DATA POLLING & RENDERING =================
 
 async function fetchSystemData() {
+    if (isDataFetching) return;
+    isDataFetching = true;
     try {
         const res = await fetch('/api/data');
         if (!res.ok) return;
         const data = await res.json();
 
         // 1. Update Header & KPI Metrics
-        document.getElementById('header-cp-count').innerText = data.checkpoints.length;
-        document.getElementById('header-band-count').innerText = data.bands.length;
-        document.getElementById('server-clock').innerText = (data.server_time && data.server_time.split(' ')[1]) || '--:--:--';
+        const cpCountEl = document.getElementById('header-cp-count');
+        if (cpCountEl && cpCountEl.innerText !== String(data.checkpoints.length)) {
+            cpCountEl.innerText = data.checkpoints.length;
+        }
+        const bandCountEl = document.getElementById('header-band-count');
+        if (bandCountEl && bandCountEl.innerText !== String(data.bands.length)) {
+            bandCountEl.innerText = data.bands.length;
+        }
+        const clockEl = document.getElementById('server-clock');
+        const newClock = (data.server_time && data.server_time.split(' ')[1]) || '--:--:--';
+        if (clockEl && clockEl.innerText !== newClock) {
+            clockEl.innerText = newClock;
+        }
         currentThresholds = data.thresholds || {};
 
         // Rover Status KPI Badge
         const roverStatusHeader = document.getElementById('header-rover-status');
-        if (data.rover && data.rover.is_online) {
-            roverStatusHeader.innerHTML = `<span class="text-industrial-green flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-industrial-green animate-pulse"></span> ONLINE (CP-${data.rover.connected_checkpoint_id || 1})</span>`;
-        } else {
-            roverStatusHeader.innerHTML = `<span class="text-on-surface-variant">STOPPED / IDLE</span>`;
+        if (roverStatusHeader) {
+            if (data.rover && data.rover.is_online) {
+                const desiredHtml = `<span class="text-industrial-green flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-industrial-green animate-pulse"></span> ONLINE (CP-${data.rover.connected_checkpoint_id || 1})</span>`;
+                if (roverStatusHeader.innerHTML !== desiredHtml) roverStatusHeader.innerHTML = desiredHtml;
+            } else {
+                const desiredHtml = `<span class="text-on-surface-variant">STOPPED / IDLE</span>`;
+                if (roverStatusHeader.innerHTML !== desiredHtml) roverStatusHeader.innerHTML = desiredHtml;
+            }
         }
 
         // 2. Render Alerts Stream (both in dedicated view and overview preview)
@@ -173,6 +201,8 @@ async function fetchSystemData() {
 
     } catch (err) {
         console.error("Fetch error:", err);
+    } finally {
+        isDataFetching = false;
     }
 }
 
@@ -183,6 +213,8 @@ function renderAlerts(alertsList) {
     const navBadge = document.getElementById('nav-alert-badge');
 
     if (!alertsList || alertsList.length === 0) {
+        if (lastAlertsSig === 'empty') return;
+        lastAlertsSig = 'empty';
         const emptyHtml = `
             <div class="bg-carbon-black border border-steel-gray rounded-sm px-3 py-2.5 text-xs text-on-surface-variant flex items-center justify-between font-mono">
                 <span class="flex items-center gap-2">
@@ -201,6 +233,10 @@ function renderAlerts(alertsList) {
         lastAlertCount = 0;
         return;
     }
+
+    const currentSig = alertsList.map(a => a.id + a.timestamp + a.level).join('|');
+    if (currentSig === lastAlertsSig) return;
+    lastAlertsSig = currentSig;
 
     if (alertsList.length > lastAlertCount) {
         const newest = alertsList[0];
@@ -259,6 +295,8 @@ function renderWorkers(bands) {
     const overviewGrid = document.getElementById('overview-workers-grid');
 
     if (!bands || bands.length === 0) {
+        if (lastWorkersSig === 'empty') return;
+        lastWorkersSig = 'empty';
         const emptyHtml = `
             <div class="industrial-panel rounded-sm p-6 text-center text-on-surface-variant font-mono text-xs col-span-full border border-steel-gray">
                 No active worker biometric bands transmitting telemetry. Connect ESP32 Band #1 (MAX30100) to begin real-time ingestion.
@@ -267,6 +305,10 @@ function renderWorkers(bands) {
         if (overviewGrid) overviewGrid.innerHTML = emptyHtml;
         return;
     }
+
+    const currentSig = bands.map(b => `${b.band_id}_${b.pulse_bpm}_${b.spo2}_${b.battery_pct}_${b.hops}_${b.is_online}`).join('|');
+    if (currentSig === lastWorkersSig) return;
+    lastWorkersSig = currentSig;
 
     const html = bands.map(b => {
         const isHypoxia = b.spo2 < (currentThresholds.spo2_critical || 90);
@@ -350,6 +392,8 @@ function renderCheckpoints(cps) {
     const overviewGrid = document.getElementById('overview-checkpoints-grid');
 
     if (!cps || cps.length === 0) {
+        if (lastCheckpointsSig === 'empty') return;
+        lastCheckpointsSig = 'empty';
         const emptyHtml = `
             <div class="industrial-panel rounded-sm p-6 text-center text-on-surface-variant font-mono text-xs col-span-full border border-steel-gray">
                 No active checkpoints reporting sensor telemetry. Listening on ESP-NOW / Wi-Fi Mesh...
@@ -358,6 +402,10 @@ function renderCheckpoints(cps) {
         if (overviewGrid) overviewGrid.innerHTML = emptyHtml;
         return;
     }
+
+    const currentSig = cps.map(cp => `${cp.checkpoint_id}_${cp.mq5}_${cp.mq7}_${cp.mq135}_${cp.sound_level}_${cp.pir_motion}_${cp.temperature}_${cp.humidity}_${cp.is_online}`).join('|');
+    if (currentSig === lastCheckpointsSig) return;
+    lastCheckpointsSig = currentSig;
 
     const html = cps.map(cp => {
         const isGasCrit = cp.mq5 >= (currentThresholds.mq5_critical || 600) || cp.mq7 >= (currentThresholds.mq7_critical || 450);
@@ -445,8 +493,11 @@ function renderRover(rover) {
     if (!rover) return;
     const battVal = document.getElementById('rover-battery-val');
     const hudVal = document.getElementById('rover-hud-status');
-    if (battVal) battVal.innerText = `${rover.battery_pct || 90}%`;
-    if (hudVal) hudVal.innerText = `STATUS: ${rover.command_name || 'STOP'} | SPEED: ${rover.speed || 0}`;
+    const newBatt = `${rover.battery_pct || 90}%`;
+    const newHud = `STATUS: ${rover.command_name || 'STOP'} | SPEED: ${rover.speed || 0}`;
+
+    if (battVal && battVal.innerText !== newBatt) battVal.innerText = newBatt;
+    if (hudVal && hudVal.innerText !== newHud) hudVal.innerText = newHud;
 
     const banner = document.getElementById('rover-connection-banner');
     const cpLinkText = document.getElementById('rover-checkpoint-link');
@@ -455,7 +506,8 @@ function renderRover(rover) {
         const cpId = rover.connected_checkpoint_id || 1;
         const cpLoc = rover.connected_checkpoint_location || 'Zone-A (Main Shaft)';
 
-        if (banner) {
+        if (banner && (!lastRoverOnline || banner.dataset.status !== 'online')) {
+            banner.dataset.status = 'online';
             banner.className = 'industrial-panel border-2 border-industrial-green text-industrial-green px-4 py-2.5 rounded-sm text-xs flex items-center justify-between transition-all';
             banner.innerHTML = `
                 <div class="flex items-center gap-2">
@@ -467,7 +519,8 @@ function renderRover(rover) {
         }
 
         if (cpLinkText) {
-            cpLinkText.innerHTML = `<span class="text-industrial-green font-bold">CHECKPOINT ${cpId} (${cpLoc})</span>`;
+            const linkHtml = `<span class="text-industrial-green font-bold">CHECKPOINT ${cpId} (${cpLoc})</span>`;
+            if (cpLinkText.innerHTML !== linkHtml) cpLinkText.innerHTML = linkHtml;
         }
 
         if (!lastRoverOnline) {
@@ -476,7 +529,8 @@ function renderRover(rover) {
         lastRoverOnline = true;
 
     } else {
-        if (banner) {
+        if (banner && (lastRoverOnline || banner.dataset.status !== 'offline')) {
+            banner.dataset.status = 'offline';
             banner.className = 'bg-surface-container-low border-2 border-steel-gray text-on-surface-variant px-4 py-2.5 rounded-sm text-xs flex items-center justify-between transition-all';
             banner.innerHTML = `
                 <div class="flex items-center gap-2">
@@ -488,7 +542,8 @@ function renderRover(rover) {
         }
 
         if (cpLinkText) {
-            cpLinkText.innerHTML = `<span class="text-on-surface-variant">OFFLINE / SEARCHING</span>`;
+            const linkHtml = `<span class="text-on-surface-variant">OFFLINE / SEARCHING</span>`;
+            if (cpLinkText.innerHTML !== linkHtml) cpLinkText.innerHTML = linkHtml;
         }
         lastRoverOnline = false;
     }
@@ -497,6 +552,11 @@ function renderRover(rover) {
 function renderTopology(cps, bands) {
     const topo = document.getElementById('mesh-topology-view');
     if (!topo) return;
+
+    const currentSig = `${cps ? cps.length : 0}-${bands ? bands.length : 0}`;
+    if (currentSig === lastTopologySig) return;
+    lastTopologySig = currentSig;
+
     topo.innerHTML = `
         <div class="bg-carbon-black border border-steel-gray p-3.5 rounded-sm space-y-1">
             <span class="material-symbols-outlined text-industrial-green text-2xl mb-1">engineering</span>
@@ -573,27 +633,51 @@ window.addEventListener('keyup', (e) => {
 
 function refreshCharts() {
     const ts = Date.now();
-    const gasChart = document.getElementById('chart-gas');
-    const gasDedicated = document.getElementById('chart-gas-dedicated');
-    const vitalsChart = document.getElementById('chart-vitals');
-    const vitalsDedicated = document.getElementById('chart-vitals-dedicated');
-    const noiseChart = document.getElementById('chart-noise');
-    const envChart = document.getElementById('chart-environment');
 
-    if (gasChart) gasChart.src = `/api/charts/gas.png?t=${ts}`;
-    if (gasDedicated) gasDedicated.src = `/api/charts/gas.png?t=${ts}`;
-    if (vitalsChart) vitalsChart.src = `/api/charts/vitals.png?t=${ts}`;
-    if (vitalsDedicated) vitalsDedicated.src = `/api/charts/vitals.png?t=${ts}`;
-    if (noiseChart) noiseChart.src = `/api/charts/noise.png?t=${ts}`;
-    if (envChart) envChart.src = `/api/charts/environment.png?t=${ts}`;
+    // Only refresh charts that are actually in the currently active/visible view
+    if (currentView === 'charts') {
+        const gasChart = document.getElementById('chart-gas');
+        const vitalsChart = document.getElementById('chart-vitals');
+        const noiseChart = document.getElementById('chart-noise');
+        const envChart = document.getElementById('chart-environment');
+
+        if (gasChart) gasChart.src = `/api/charts/gas.png?t=${ts}`;
+        if (vitalsChart) vitalsChart.src = `/api/charts/vitals.png?t=${ts}`;
+        if (noiseChart) noiseChart.src = `/api/charts/noise.png?t=${ts}`;
+        if (envChart) envChart.src = `/api/charts/environment.png?t=${ts}`;
+    } else if (currentView === 'workers') {
+        const vitalsDedicated = document.getElementById('chart-vitals-dedicated');
+        if (vitalsDedicated) vitalsDedicated.src = `/api/charts/vitals.png?t=${ts}`;
+    } else if (currentView === 'checkpoints') {
+        const gasDedicated = document.getElementById('chart-gas-dedicated');
+        if (gasDedicated) gasDedicated.src = `/api/charts/gas.png?t=${ts}`;
+    }
+    // On 'overview', 'incidents', 'rover', 'topology', NO charts are displayed; do 0 requests!
 }
 
 function refreshCamera() {
+    if (isCameraLoading) return; // Prevent piling up concurrent image requests
     const ts = Date.now();
-    const cam = document.getElementById('rover-camera-img');
-    const overviewCam = document.getElementById('overview-rover-camera-img');
-    if (cam) cam.src = `/api/camera/latest.jpg?t=${ts}`;
-    if (overviewCam) overviewCam.src = `/api/camera/latest.jpg?t=${ts}`;
+
+    let activeCamEl = null;
+    if (currentView === 'overview') {
+        activeCamEl = document.getElementById('overview-rover-camera-img');
+    } else if (currentView === 'rover') {
+        activeCamEl = document.getElementById('rover-camera-img');
+    }
+
+    if (activeCamEl) {
+        isCameraLoading = true;
+        const tempImg = new Image();
+        tempImg.onload = () => {
+            activeCamEl.src = tempImg.src;
+            isCameraLoading = false;
+        };
+        tempImg.onerror = () => {
+            isCameraLoading = false;
+        };
+        tempImg.src = `/api/camera/latest.jpg?t=${ts}`;
+    }
 }
 
 // ================= ALERTS ACK & THRESHOLDS =================

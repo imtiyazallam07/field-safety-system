@@ -26,7 +26,7 @@ import report_service
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
 # ================= GLOBAL THREAD-SAFE STATE =================
-state_lock = threading.Lock()
+state_lock = threading.RLock()
 
 # Rolling history length (data points per metric)
 HISTORY_MAXLEN = 120
@@ -65,6 +65,8 @@ pending_rover_command = {
 # Alerts Feed
 alerts = deque(maxlen=250)
 alert_counter = 0
+alert_cooldowns = {}
+ALERT_COOLDOWN_SECONDS = 8.0
 
 # Configurable Safety Thresholds
 thresholds = {
@@ -86,12 +88,26 @@ thresholds = {
 # Camera Frame Storage
 latest_camera_frame_bytes = None
 camera_chunks_buffer = {}
+default_camera_frame_cache = None
+default_camera_frame_last_text = ""
+
+# Chart Image Cache
+chart_cache = {}
+CHART_CACHE_TTL = 1.5
 
 # ================= HELPER FUNCTIONS =================
 
 def log_alert(level, category, device_id, message):
     global alert_counter
+    now = time.time()
+    dedup_key = (category, str(device_id), level)
+
     with state_lock:
+        last_logged = alert_cooldowns.get(dedup_key, 0)
+        cooldown = 4.0 if level == "CRITICAL" else ALERT_COOLDOWN_SECONDS
+        if now - last_logged < cooldown:
+            return
+        alert_cooldowns[dedup_key] = now
         alert_counter += 1
         alert_item = {
             "id": f"ALT-{alert_counter:04d}",
@@ -162,6 +178,11 @@ def evaluate_thresholds_for_band(b_data):
         log_alert("WARNING", "Vitals", f"{worker}", f"Bradycardia / Abnormally low pulse rate: {pulse:.0f} BPM")
 
 def generate_default_camera_frame():
+    global default_camera_frame_cache, default_camera_frame_last_text
+    status_text = f"{rover_state['command_name']}_{rover_state['speed']}"
+    if default_camera_frame_cache and status_text == default_camera_frame_last_text:
+        return default_camera_frame_cache
+
     width, height = 320, 240
     img = Image.new('RGB', (width, height), color=(15, 23, 42))
     draw = ImageDraw.Draw(img)
@@ -182,7 +203,10 @@ def generate_default_camera_frame():
 
     buf = io.BytesIO()
     img.save(buf, format='JPEG', quality=85)
-    return buf.getvalue()
+    frame_bytes = buf.getvalue()
+    default_camera_frame_cache = frame_bytes
+    default_camera_frame_last_text = status_text
+    return frame_bytes
 
 # ================= API ENDPOINTS =================
 
@@ -472,10 +496,10 @@ def receive_camera_chunk():
 def get_camera_latest():
     """Returns the latest rover camera frame."""
     with state_lock:
-        if latest_camera_frame_bytes:
-            frame_data = latest_camera_frame_bytes
-        else:
-            frame_data = generate_default_camera_frame()
+        frame_data = latest_camera_frame_bytes
+
+    if not frame_data:
+        frame_data = generate_default_camera_frame()
 
     return Response(frame_data, mimetype='image/jpeg')
 
@@ -611,6 +635,28 @@ def handle_thresholds():
 
 @app.route('/api/charts/<chart_type>.png')
 def generate_chart(chart_type):
+    now = time.time()
+    cached = chart_cache.get(chart_type)
+    if cached and (now - cached["timestamp"]) < CHART_CACHE_TTL:
+        return Response(cached["bytes"], mimetype='image/png')
+
+    with state_lock:
+        cp_snapshot = {
+            cp_id: {
+                "location": cp.get("location", f"CP-{cp_id}"),
+                "history": list(cp.get("history", []))
+            }
+            for cp_id, cp in checkpoints.items()
+        }
+        band_snapshot = {
+            b_id: {
+                "worker_name": b.get("worker_name", f"Band-{b_id}"),
+                "history": list(b.get("history", []))
+            }
+            for b_id, b in bands.items()
+        }
+        th_snapshot = dict(thresholds)
+
     fig, ax = plt.subplots(figsize=(7.5, 3.8), dpi=100)
     fig.patch.set_facecolor('#0A0A0B')
     ax.set_facecolor('#131314')
@@ -620,111 +666,117 @@ def generate_chart(chart_type):
         spine.set_color('#2D2E32')
     ax.grid(True, color='#2D2E32', linestyle='--', alpha=0.6)
 
-    with state_lock:
-        if chart_type == 'gas':
-            ax.set_title('Live Gas Levels (MQ5 / MQ7 / MQ135)', color='#FBBF24', fontsize=11, fontweight='bold', pad=10)
-            ax.set_ylabel('Sensor Reading (ADC / PPM)', color='#d3c5ac', fontsize=9)
-            has_data = False
+    if chart_type == 'gas':
+        ax.set_title('Live Gas Levels (MQ5 / MQ7 / MQ135)', color='#FBBF24', fontsize=11, fontweight='bold', pad=10)
+        ax.set_ylabel('Sensor Reading (ADC / PPM)', color='#d3c5ac', fontsize=9)
+        has_data = False
 
-            for cp_id, cp in checkpoints.items():
-                hist = list(cp["history"])
-                if not hist:
-                    continue
-                has_data = True
-                indices = range(len(hist))
-                loc = cp.get("location", f"CP-{cp_id}")
+        for cp_id, cp in cp_snapshot.items():
+            hist = cp["history"]
+            if not hist:
+                continue
+            has_data = True
+            indices = range(len(hist))
+            loc = cp.get("location", f"CP-{cp_id}")
 
-                mq5_vals = [h["mq5"] for h in hist]
-                mq7_vals = [h["mq7"] for h in hist]
-                mq135_vals = [h["mq135"] for h in hist]
+            mq5_vals = [h["mq5"] for h in hist]
+            mq7_vals = [h["mq7"] for h in hist]
+            mq135_vals = [h["mq135"] for h in hist]
 
-                ax.plot(indices, mq5_vals, label=f'{loc} - MQ5 (Combustible)', color='#FBBF24', linewidth=1.8)
-                ax.plot(indices, mq7_vals, label=f'{loc} - MQ7 (CO)', color='#FF0000', linewidth=1.8, linestyle='--')
-                ax.plot(indices, mq135_vals, label=f'{loc} - MQ135 (Air Quality)', color='#F97316', linewidth=1.8, linestyle=':')
+            ax.plot(indices, mq5_vals, label=f'{loc} - MQ5 (Combustible)', color='#FBBF24', linewidth=1.8)
+            ax.plot(indices, mq7_vals, label=f'{loc} - MQ7 (CO)', color='#FF0000', linewidth=1.8, linestyle='--')
+            ax.plot(indices, mq135_vals, label=f'{loc} - MQ135 (Air Quality)', color='#F97316', linewidth=1.8, linestyle=':')
 
-            ax.axhline(y=thresholds["mq5_critical"], color='#FF0000', linestyle='-.', linewidth=1.5, label=f'MQ5 Danger ({thresholds["mq5_critical"]:.0f})')
-            ax.axhline(y=thresholds["mq7_critical"], color='#93000a', linestyle='-.', linewidth=1.5, label=f'MQ7 Danger ({thresholds["mq7_critical"]:.0f})')
+        ax.axhline(y=th_snapshot["mq5_critical"], color='#FF0000', linestyle='-.', linewidth=1.5, label=f'MQ5 Danger ({th_snapshot["mq5_critical"]:.0f})')
+        ax.axhline(y=th_snapshot["mq7_critical"], color='#93000a', linestyle='-.', linewidth=1.5, label=f'MQ7 Danger ({th_snapshot["mq7_critical"]:.0f})')
 
-            if not has_data:
-                ax.text(0.5, 0.5, 'Waiting for Checkpoint Gas Telemetry...', color='#9c8f79', ha='center', va='center', transform=ax.transAxes)
+        if not has_data:
+            ax.text(0.5, 0.5, 'Waiting for Checkpoint Gas Telemetry...', color='#9c8f79', ha='center', va='center', transform=ax.transAxes)
 
-        elif chart_type == 'noise':
-            ax.set_title('Site Noise & Sound Peak Levels (HW-484-V0.2)', color='#FBBF24', fontsize=11, fontweight='bold', pad=10)
-            ax.set_ylabel('Sound Peak Amplitude (ADC)', color='#d3c5ac', fontsize=9)
-            has_data = False
-            colors = ['#FBBF24', '#F97316', '#22C55E', '#FF0000']
+    elif chart_type == 'noise':
+        ax.set_title('Site Noise & Sound Peak Levels (HW-484-V0.2)', color='#FBBF24', fontsize=11, fontweight='bold', pad=10)
+        ax.set_ylabel('Sound Peak Amplitude (ADC)', color='#d3c5ac', fontsize=9)
+        has_data = False
+        colors = ['#FBBF24', '#F97316', '#22C55E', '#FF0000']
 
-            for i, (cp_id, cp) in enumerate(checkpoints.items()):
-                hist = list(cp["history"])
-                if not hist:
-                    continue
-                has_data = True
-                indices = range(len(hist))
-                sound_vals = [h["sound_level"] for h in hist]
-                loc = cp.get("location", f"CP-{cp_id}")
-                ax.plot(indices, sound_vals, label=f'{loc} Sound', color=colors[i % len(colors)], linewidth=2.0)
+        for i, (cp_id, cp) in enumerate(cp_snapshot.items()):
+            hist = cp["history"]
+            if not hist:
+                continue
+            has_data = True
+            indices = range(len(hist))
+            sound_vals = [h["sound_level"] for h in hist]
+            loc = cp.get("location", f"CP-{cp_id}")
+            ax.plot(indices, sound_vals, label=f'{loc} Sound', color=colors[i % len(colors)], linewidth=2.0)
 
-            ax.axhline(y=thresholds["sound_spike_threshold"], color='#FF0000', linestyle='--', linewidth=1.6, label=f'Explosion Spike Threshold ({thresholds["sound_spike_threshold"]:.0f})')
+        ax.axhline(y=th_snapshot["sound_spike_threshold"], color='#FF0000', linestyle='--', linewidth=1.6, label=f'Explosion Spike Threshold ({th_snapshot["sound_spike_threshold"]:.0f})')
 
-            if not has_data:
-                ax.text(0.5, 0.5, 'Waiting for Acoustic Sensor Telemetry...', color='#9c8f79', ha='center', va='center', transform=ax.transAxes)
+        if not has_data:
+            ax.text(0.5, 0.5, 'Waiting for Acoustic Sensor Telemetry...', color='#9c8f79', ha='center', va='center', transform=ax.transAxes)
 
-        elif chart_type == 'environment':
-            ax.set_title('Environmental Conditions (DHT11 Temp & Humidity)', color='#FBBF24', fontsize=11, fontweight='bold', pad=10)
-            ax.set_ylabel('Temp (°C) / Humidity (%)', color='#d3c5ac', fontsize=9)
-            has_data = False
+    elif chart_type == 'environment':
+        ax.set_title('Environmental Conditions (DHT11 Temp & Humidity)', color='#FBBF24', fontsize=11, fontweight='bold', pad=10)
+        ax.set_ylabel('Temp (°C) / Humidity (%)', color='#d3c5ac', fontsize=9)
+        has_data = False
 
-            for cp_id, cp in checkpoints.items():
-                hist = list(cp["history"])
-                if not hist:
-                    continue
-                has_data = True
-                indices = range(len(hist))
-                loc = cp.get("location", f"CP-{cp_id}")
-                t_vals = [h["temperature"] for h in hist]
-                h_vals = [h["humidity"] for h in hist]
+        for cp_id, cp in cp_snapshot.items():
+            hist = cp["history"]
+            if not hist:
+                continue
+            has_data = True
+            indices = range(len(hist))
+            loc = cp.get("location", f"CP-{cp_id}")
+            t_vals = [h["temperature"] for h in hist]
+            h_vals = [h["humidity"] for h in hist]
 
-                ax.plot(indices, t_vals, label=f'{loc} Temp (°C)', color='#F97316', linewidth=1.8)
-                ax.plot(indices, h_vals, label=f'{loc} Humidity (%)', color='#22C55E', linewidth=1.8, linestyle='--')
+            ax.plot(indices, t_vals, label=f'{loc} Temp (°C)', color='#F97316', linewidth=1.8)
+            ax.plot(indices, h_vals, label=f'{loc} Humidity (%)', color='#22C55E', linewidth=1.8, linestyle='--')
 
-            ax.axhline(y=thresholds["temp_max"], color='#FF0000', linestyle=':', linewidth=1.4, label=f'Max Safe Temp ({thresholds["temp_max"]:.0f}°C)')
+        ax.axhline(y=th_snapshot["temp_max"], color='#FF0000', linestyle=':', linewidth=1.4, label=f'Max Safe Temp ({th_snapshot["temp_max"]:.0f}°C)')
 
-            if not has_data:
-                ax.text(0.5, 0.5, 'Waiting for DHT11 Telemetry...', color='#9c8f79', ha='center', va='center', transform=ax.transAxes)
+        if not has_data:
+            ax.text(0.5, 0.5, 'Waiting for DHT11 Telemetry...', color='#9c8f79', ha='center', va='center', transform=ax.transAxes)
 
-        elif chart_type == 'vitals':
-            ax.set_title('Personnel Vitals (SpO2 & Heart Rate)', color='#FBBF24', fontsize=11, fontweight='bold', pad=10)
-            ax.set_ylabel('SpO2 (%) / Pulse (BPM)', color='#d3c5ac', fontsize=9)
-            has_data = False
-            colors = ['#22C55E', '#FBBF24', '#F97316']
+    elif chart_type == 'vitals':
+        ax.set_title('Personnel Vitals (SpO2 & Heart Rate)', color='#FBBF24', fontsize=11, fontweight='bold', pad=10)
+        ax.set_ylabel('SpO2 (%) / Pulse (BPM)', color='#d3c5ac', fontsize=9)
+        has_data = False
+        colors = ['#22C55E', '#FBBF24', '#F97316']
 
-            for i, (b_id, b) in enumerate(bands.items()):
-                hist = list(b["history"])
-                if not hist:
-                    continue
-                has_data = True
-                indices = range(len(hist))
-                name = b.get("worker_name", f"Band-{b_id}")
-                spo2_vals = [h["spo2"] for h in hist]
-                pulse_vals = [h["pulse_bpm"] for h in hist]
+        for i, (b_id, b) in enumerate(band_snapshot.items()):
+            hist = b["history"]
+            if not hist:
+                continue
+            has_data = True
+            indices = range(len(hist))
+            name = b.get("worker_name", f"Band-{b_id}")
+            spo2_vals = [h["spo2"] for h in hist]
+            pulse_vals = [h["pulse_bpm"] for h in hist]
 
-                ax.plot(indices, spo2_vals, label=f'{name} SpO2 (%)', color=colors[i % len(colors)], linewidth=2.0)
-                ax.plot(indices, pulse_vals, label=f'{name} Pulse (BPM)', color='#FBBF24', linewidth=1.5, linestyle='--')
+            ax.plot(indices, spo2_vals, label=f'{name} SpO2 (%)', color=colors[i % len(colors)], linewidth=2.0)
+            ax.plot(indices, pulse_vals, label=f'{name} Pulse (BPM)', color='#FBBF24', linewidth=1.5, linestyle='--')
 
-            ax.axhline(y=thresholds["spo2_critical"], color='#FF0000', linestyle='--', linewidth=1.6, label=f'Critical SpO2 ({thresholds["spo2_critical"]:.0f}%)')
-            ax.axhline(y=thresholds["spo2_warning"], color='#F97316', linestyle=':', linewidth=1.4, label=f'Warning SpO2 ({thresholds["spo2_warning"]:.0f}%)')
+        ax.axhline(y=th_snapshot["spo2_critical"], color='#FF0000', linestyle='--', linewidth=1.6, label=f'Critical SpO2 ({th_snapshot["spo2_critical"]:.0f}%)')
+        ax.axhline(y=th_snapshot["spo2_warning"], color='#F97316', linestyle=':', linewidth=1.4, label=f'Warning SpO2 ({th_snapshot["spo2_warning"]:.0f}%)')
 
-            if not has_data:
-                ax.text(0.5, 0.5, 'Waiting for Worker Band Telemetry...', color='#9c8f79', ha='center', va='center', transform=ax.transAxes)
+        if not has_data:
+            ax.text(0.5, 0.5, 'Waiting for Worker Band Telemetry...', color='#9c8f79', ha='center', va='center', transform=ax.transAxes)
 
-        ax.legend(loc='upper right', facecolor='#0A0A0B', edgecolor='#2D2E32', fontsize=7, labelcolor='#e5e2e3')
+    ax.legend(loc='upper right', facecolor='#0A0A0B', edgecolor='#2D2E32', fontsize=7, labelcolor='#e5e2e3')
 
     fig.tight_layout()
     img_buf = io.BytesIO()
     fig.savefig(img_buf, format='png', facecolor=fig.get_facecolor(), edgecolor='none')
     plt.close(fig)
     img_buf.seek(0)
-    return Response(img_buf.getvalue(), mimetype='image/png')
+    chart_bytes = img_buf.getvalue()
+
+    chart_cache[chart_type] = {
+        "bytes": chart_bytes,
+        "timestamp": time.time()
+    }
+
+    return Response(chart_bytes, mimetype='image/png')
 
 # ================= SERVER INITIALIZATION =================
 if __name__ == '__main__':
